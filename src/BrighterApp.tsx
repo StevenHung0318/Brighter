@@ -205,7 +205,7 @@ export default function BrighterApp() {
         <div className="absolute bottom-10 right-10 w-80 h-80 bg-yellow-400/10 blur-3xl" />
       </div>
 
-      <div className="relative mx-auto max-w-6xl px-6 py-10 md:px-10">
+      <div className="relative mx-auto max-w-6xl px-6 py-10 pb-28 md:px-10 md:pb-10">
         <header className="flex items-center justify-between gap-4 rounded-2xl border border-white/5 bg-white/5 p-4 backdrop-blur">
           <div className="flex items-center gap-3">
             <img
@@ -1090,6 +1090,32 @@ export default function BrighterApp() {
           )}
         </main>
       </div>
+      {/* Mobile bottom nav with Earn & Stake only */}
+      <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-white/10 bg-slate-950/90 backdrop-blur md:hidden">
+        <div className="mx-auto flex max-w-4xl items-center justify-around px-4 py-3 pb-[calc(12px+env(safe-area-inset-bottom))]">
+          {[
+            { key: "Deposit", label: "Earn", icon: Wallet },
+            { key: "Stake", label: "Stake", icon: Sparkles },
+          ].map((item) => {
+            const isActive = activeTab === item.key;
+            const Icon = item.icon;
+            return (
+              <button
+                key={item.key}
+                onClick={() => setActiveTab(item.key as Tab)}
+                className={`flex flex-col items-center justify-center gap-1 rounded-xl px-4 py-2 text-xs font-semibold transition ${
+                  isActive
+                    ? "bg-white/15 text-white shadow-md shadow-cyan-500/25"
+                    : "text-slate-300 hover:text-white"
+                }`}
+              >
+                <Icon className="h-5 w-5" />
+                <span>{item.label}</span>
+              </button>
+            );
+          })}
+        </div>
+      </nav>
     </div>
   );
 }
