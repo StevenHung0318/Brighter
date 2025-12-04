@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Zap,
   TrendingUp,
@@ -13,7 +13,13 @@ import usdcLogo from "./Assets/USDC_logo.png";
 import usdlLogo from "./Assets/usdl.png";
 
 const formatPercent = (value: number) => `${value.toFixed(1)}%`;
-type Tab = "Loop" | "Earn" | "Deposit" | "Borrow";
+type Tab = "Loop" | "Earn" | "Deposit" | "Borrow" | "Stake";
+const chainIcons: Record<string, string> = {
+  Ethereum: "https://s2.coinmarketcap.com/static/img/coins/64x64/1027.png",
+  Arbitrum: "https://s2.coinmarketcap.com/static/img/coins/64x64/11841.png",
+  Base: "https://s2.coinmarketcap.com/static/img/coins/64x64/27716.png",
+  Avalanche: "https://s2.coinmarketcap.com/static/img/coins/64x64/5805.png",
+};
 
 export default function BrighterApp() {
   const [activeTab, setActiveTab] = useState<Tab>("Loop");
@@ -23,10 +29,145 @@ export default function BrighterApp() {
   const [borrowAmount, setBorrowAmount] = useState("5000");
   const [zapChain, setZapChain] = useState("Arbitrum");
   const [zapAmount, setZapAmount] = useState("2000");
+  const [withdrawAmount, setWithdrawAmount] = useState("600");
+  const [depositMode, setDepositMode] = useState<"deposit" | "withdraw">(
+    "deposit"
+  );
+  const [stakeAmount, setStakeAmount] = useState("1500");
+  const [stakePeriod, setStakePeriod] = useState<
+    "30d" | "90d" | "180d" | "365d"
+  >("30d");
+  const [stakeStart, setStakeStart] = useState(Date.now());
   const [priceRange, setPriceRange] = useState<
     "1W" | "1M" | "3M" | "1Y" | "ALL"
   >("ALL");
   const [aprHover, setAprHover] = useState(false);
+  const totalDeposited = "$128.4M";
+  const yourDeposited = "$12,400";
+  const headlineApr = "63%";
+  const stakeBoostMap: Record<"30d" | "90d" | "180d" | "365d", number> = {
+    "30d": 1,
+    "90d": 2,
+    "180d": 5,
+    "365d": 10,
+  };
+  const stakeDurationMs: Record<"30d" | "90d" | "180d" | "365d", number> = {
+    "30d": 30 * 24 * 3600 * 1000,
+    "90d": 90 * 24 * 3600 * 1000,
+    "180d": 180 * 24 * 3600 * 1000,
+    "365d": 365 * 24 * 3600 * 1000,
+  };
+  const stakePointRates: Record<
+    "30d" | "90d" | "180d" | "365d",
+    { lighter: number; brighter: number }
+  > = {
+    "30d": { lighter: 1, brighter: 2 },
+    "90d": { lighter: 2, brighter: 5 },
+    "180d": { lighter: 5, brighter: 12 },
+    "365d": { lighter: 10, brighter: 30 },
+  };
+  const lighterPerDay = (Number(stakeAmount) || 0) * 0.004;
+  const brighterPerDay = (Number(stakeAmount) || 0) * 0.2;
+  const stakeBoost = stakeBoostMap[stakePeriod] ?? 1;
+  const totalLighter =
+    (Number(stakeAmount) || 0) * (stakePointRates[stakePeriod]?.lighter ?? 0);
+  const totalBrighter =
+    (Number(stakeAmount) || 0) * (stakePointRates[stakePeriod]?.brighter ?? 0);
+  const currentRates = stakePointRates[stakePeriod];
+  const stakePositions = useMemo(
+    () => [
+      {
+        id: "pos-1",
+        amount: 1200,
+        unlockAt: Date.now() + 2 * 3600 * 1000,
+      },
+      {
+        id: "pos-2",
+        amount: 800,
+        unlockAt: Date.now() + 20 * 3600 * 1000,
+      },
+      {
+        id: "pos-3",
+        amount: 500,
+        unlockAt: Date.now() - 3600 * 1000,
+      },
+    ],
+    []
+  );
+  const unlockAt = useMemo(
+    () => stakeStart + (stakeDurationMs[stakePeriod] ?? 0),
+    [stakePeriod, stakeStart]
+  );
+  const [nowTs, setNowTs] = useState(Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNowTs(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, []);
+  const txHistory = [
+    {
+      time: "2025-12-04 06:42:16",
+      action: "Deposit",
+      amount: "2,000 USDC",
+      receive: "1,960 USDL",
+      tx: "0x91e...6cQ27",
+    },
+    {
+      time: "2025-12-03 12:10:04",
+      action: "Request withdraw",
+      amount: "850 USDL",
+      tx: "0x7af...d14b1",
+    },
+    {
+      time: "2025-12-02 20:30:55",
+      action: "Withdraw",
+      amount: "1,200 USDC",
+      burn: "1,150 USDL",
+      tx: "0x4c1...0a9cd",
+    },
+    {
+      time: "2025-12-01 09:12:12",
+      action: "Deposit",
+      amount: "500 USDC",
+      receive: "488 USDL",
+      tx: "0x12f...98bd2",
+    },
+    {
+      time: "2024-11-22 14:05:42",
+      action: "Deposit",
+      amount: "1,000 USDC",
+      receive: "978 USDL",
+      tx: "0xabd...31ff2",
+    },
+    {
+      time: "2024-11-18 16:22:11",
+      action: "Withdraw",
+      amount: "700 USDC",
+      burn: "670 USDL",
+      tx: "0xbb8...a4c10",
+    },
+    {
+      time: "2024-11-10 08:47:33",
+      action: "Request withdraw",
+      amount: "320 USDL",
+      tx: "0xcc1...ab90f",
+    },
+    {
+      time: "2024-11-01 10:10:10",
+      action: "Deposit",
+      amount: "1,500 USDC",
+      receive: "1,460 USDL",
+      tx: "0xddf...f1022",
+    },
+  ];
+  const [txPage, setTxPage] = useState(0);
+  const pageSize = 4;
+  const txTotalPages = Math.ceil(txHistory.length / pageSize);
+  const txPageData = txHistory.slice(
+    txPage * pageSize,
+    txPage * pageSize + pageSize
+  );
+  const remainingMs = Math.max(0, unlockAt - nowTs);
+  const claimReady = remainingMs <= 0;
   const usdlPriceSeries = useMemo(
     () => [
       1.0, 1.03, 1.08, 1.12, 1.18, 1.16, 1.22, 1.3, 1.27, 1.35, 1.4, 1.48, 1.55,
@@ -71,28 +212,27 @@ export default function BrighterApp() {
             </div>
             <div>
               <p className="text-lg font-semibold tracking-tight">Brighter</p>
-              <p className="text-xs text-slate-400">
-                Leveraged Yield on Lighter
-              </p>
             </div>
           </div>
           <nav className="hidden items-center gap-4 text-sm text-slate-300 md:flex">
-            {(["Loop", "Earn", "Borrow", "Deposit"] as Tab[]).map((item) => {
-              const isActive = activeTab === item;
-              return (
-                <button
-                  key={item}
-                  onClick={() => setActiveTab(item)}
-                  className={`rounded-lg px-3 py-2 transition focus:outline-none ${
-                    isActive
-                      ? "bg-white/10 text-white shadow-md shadow-cyan-400/20"
-                      : "hover:text-white"
-                  }`}
-                >
-                  {item}
-                </button>
-              );
-            })}
+            {(["Deposit", "Stake", "Loop", "Earn", "Borrow"] as Tab[]).map(
+              (item) => {
+                const isActive = activeTab === item;
+                return (
+                  <button
+                    key={item}
+                    onClick={() => setActiveTab(item)}
+                    className={`rounded-lg px-3 py-2 transition focus:outline-none ${
+                      isActive
+                        ? "bg-white/10 text-white shadow-md shadow-cyan-400/20"
+                        : "hover:text-white"
+                    }`}
+                  >
+                    {item === "Deposit" ? "Earn" : item === "Earn" ? "Supply" : item}
+                  </button>
+                );
+              }
+            )}
           </nav>
           <div className="flex items-center gap-3">
             <button className="flex items-center gap-2 rounded-xl border border-cyan-300/30 bg-cyan-300/10 px-4 py-2 text-sm font-semibold text-cyan-100 shadow-lg shadow-cyan-500/20 transition hover:-translate-y-0.5 hover:border-cyan-300/60 hover:bg-cyan-300/20 focus:outline-none">
@@ -294,39 +434,67 @@ export default function BrighterApp() {
                     Deposit USDC to mint USDL
                   </h2>
                   <p className="text-sm text-slate-300">
-                    USDL is a yield-bearing stablecoin powered by LLP
+                    USDL is a yield-bearing stablecoin powered by Lighter LLP
                   </p>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div
-                    onMouseEnter={() => setAprHover(true)}
-                    onMouseLeave={() => setAprHover(false)}
-                    className="relative"
-                  >
-                    <div className="flex items-center gap-2 rounded-full border border-cyan-300/30 bg-cyan-300/10 px-4 py-2 text-sm font-semibold text-cyan-100 shadow-inner shadow-cyan-500/20">
-                      APR 63%
-                    </div>
-                    {aprHover && (
-                      <div className="absolute right-0 top-11 z-20 w-64 rounded-xl border border-white/10 bg-slate-900/90 p-3 text-xs text-slate-200 shadow-lg shadow-cyan-500/20">
-                        <div className="flex items-center justify-between">
-                          <span>LLP yield</span>
-                          <span className="text-cyan-100">35%</span>
-                        </div>
-                        <div className="mt-2 flex items-center justify-between">
-                          <span>Lither point</span>
-                          <span className="text-cyan-100">0.004/USDC/day (~20%)</span>
-                        </div>
-                        <div className="mt-2 flex items-center justify-between">
-                          <span>Brighter point</span>
-                          <span className="text-cyan-100">0.2/USDC/day (~8%)</span>
-                        </div>
-                      </div>
-                    )}
-                  </div>
                 </div>
               </div>
 
-              <div className="mt-6 grid gap-5 lg:grid-cols-[1.1fr_0.9fr] xl:grid-cols-[1.2fr_1fr]">
+              <div className="mt-4 grid gap-3 md:grid-cols-5">
+                <HoverAmountCard
+                  label="Total deposited"
+                  amount={totalDeposited}
+                />
+                <HoverAmountCard
+                  label="Your deposited"
+                  amount={yourDeposited}
+                />
+                <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
+                  <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
+                    Lighter points
+                  </p>
+                  <p className="text-2xl font-semibold text-white">12,840</p>
+                </div>
+                <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
+                  <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
+                    Brighter points
+                  </p>
+                  <p className="text-2xl font-semibold text-white">6,420</p>
+                </div>
+                <div
+                  className="relative rounded-2xl border border-white/10 bg-gradient-to-r from-cyan-400/15 via-yellow-300/15 to-cyan-400/15 px-4 py-3"
+                  onMouseEnter={() => setAprHover(true)}
+                  onMouseLeave={() => setAprHover(false)}
+                >
+                  <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
+                    APR
+                  </p>
+                  <p className="text-2xl font-semibold text-cyan-100 drop-shadow-[0_0_12px_rgba(34,211,238,0.45)]">
+                    {headlineApr}
+                  </p>
+                  {aprHover && (
+                    <div className="absolute right-0 top-16 z-20 w-64 rounded-xl border border-white/10 bg-slate-900/90 p-3 text-xs text-slate-200 shadow-lg shadow-cyan-500/20">
+                      <div className="flex items-center justify-between">
+                        <span>LLP yield</span>
+                        <span className="text-cyan-100">35%</span>
+                      </div>
+                      <div className="mt-2 flex items-center justify-between">
+                        <span>Lighter point</span>
+                        <span className="text-cyan-100">
+                          0.004/USDC/day (~20%)
+                        </span>
+                      </div>
+                      <div className="mt-2 flex items-center justify-between">
+                        <span>Brighter point</span>
+                        <span className="text-cyan-100">
+                          0.2/USDC/day (~8%)
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="mt-6 grid gap-5 lg:grid-cols-2 xl:grid-cols-2">
                 <USDLPriceCard
                   data={usdlPriceSeries}
                   range={priceRange}
@@ -334,110 +502,511 @@ export default function BrighterApp() {
                 />
 
                 <div className="space-y-4 rounded-2xl border border-white/10 bg-slate-950/70 p-5 shadow-inner shadow-cyan-500/10 lg:row-span-1">
-                  <div className="grid gap-3 md:grid-cols-2">
-                    <div>
-                      <label className="text-xs text-slate-400">
-                        Source chain
-                      </label>
-                      <div className="relative mt-2">
-                        <select
-                          value={zapChain}
-                          onChange={(e) => setZapChain(e.target.value)}
-                          className="w-full appearance-none rounded-xl border border-white/10 bg-slate-900/80 px-4 py-3 pr-10 text-sm text-white focus:border-cyan-400/60 focus:outline-none"
+                  <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-slate-900/80 p-1 text-xs text-slate-200">
+                    {["deposit", "withdraw"].map((mode) => {
+                      const isActive = depositMode === mode;
+                      return (
+                        <button
+                          key={mode}
+                          className={`rounded-full px-4 py-2 font-semibold transition ${
+                            isActive
+                              ? "bg-gradient-to-r from-cyan-400 to-sky-500 text-slate-950 shadow-md shadow-cyan-400/30"
+                              : "text-slate-300 hover:text-white"
+                          }`}
+                          onClick={() =>
+                            setDepositMode(mode as "deposit" | "withdraw")
+                          }
                         >
-                          {["Ethereum", "Arbitrum", "Base", "Avalanche"].map(
-                            (chain) => (
-                              <option key={chain}>{chain}</option>
-                            )
-                          )}
-                        </select>
-                        <ChevronDown className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                      </div>
-                    </div>
-                    <div>
-                      <label className="text-xs text-slate-400">
-                        Destination
-                      </label>
-                      <div className="mt-2 flex items-center gap-2 rounded-xl border border-cyan-300/30 bg-cyan-300/10 px-4 py-3 text-sm font-semibold text-cyan-100">
-                        <img
-                          src={llpLogo}
-                          alt="LLP"
-                          className="h-6 w-6 rounded-full bg-cyan-500/10 p-1"
-                        />
-                        Brighter Account
-                      </div>
-                    </div>
+                          {mode === "deposit" ? "Deposit" : "Withdraw"}
+                        </button>
+                      );
+                    })}
                   </div>
 
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between text-xs text-slate-400">
-                      <label>You deposit</label>
-                      <span>Wallet balance: 12,000 USDC</span>
-                    </div>
-                    <div className="relative">
-                      <input
-                        value={zapAmount}
-                        onChange={(e) => setZapAmount(e.target.value)}
-                        className="w-full rounded-xl border border-white/10 bg-slate-950/70 px-4 py-3 pr-28 text-lg font-mono text-white focus:border-cyan-400/60 focus:outline-none"
-                        placeholder="0.0"
-                      />
-                      <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center gap-2 text-sm font-semibold text-white">
-                        <img
-                          src={usdcLogo}
-                          alt="USDC"
-                          className="h-8 w-8 rounded-full bg-slate-900 p-[1px]"
-                        />
-                        USDC
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="grid gap-3 md:grid-cols-2">
-                    <Metric
-                      label="You receive"
-                      value={
-                        <div className="flex items-center justify-between gap-2 text-lg">
-                          <span>
-                            {(Number(zapAmount || 0) / 1.01).toFixed(2)}
-                          </span>
-                          <span className="inline-flex items-center gap-2 text-sm font-semibold text-white">
+                  {depositMode === "deposit" ? (
+                    <>
+                      <div className="grid gap-3 md:grid-cols-2">
+                        <div>
+                          <label className="text-xs text-slate-400">
+                            Source chain
+                          </label>
+                          <div className="relative mt-2">
+                            <select
+                              value={zapChain}
+                              onChange={(e) => setZapChain(e.target.value)}
+                              className="w-full appearance-none rounded-xl border border-white/10 bg-slate-900/80 px-4 py-3 pl-12 pr-10 text-sm text-white focus:border-cyan-400/60 focus:outline-none"
+                              style={{
+                                backgroundImage: `url(${chainIcons[zapChain]})`,
+                                backgroundRepeat: "no-repeat",
+                                backgroundPosition: "12px center",
+                                backgroundSize: "20px 20px",
+                              }}
+                            >
+                              {[
+                                "Ethereum",
+                                "Arbitrum",
+                                "Base",
+                                "Avalanche",
+                              ].map((chain) => (
+                                <option key={chain}>{chain}</option>
+                              ))}
+                            </select>
+                            <ChevronDown className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                          </div>
+                        </div>
+                        <div>
+                          <label className="text-xs text-slate-400">
+                            Destination
+                          </label>
+                          <div className="mt-2 flex items-center gap-2 rounded-xl border border-cyan-300/30 bg-cyan-300/10 px-4 py-3 text-sm font-semibold text-cyan-100">
                             <img
-                              src={usdlLogo}
-                              alt="USDL"
+                              src={chainIcons.Ethereum}
+                              alt="Ethereum"
                               className="h-6 w-6 rounded-full bg-slate-900 p-[1px]"
                             />
-                            USDL
-                          </span>
+                            Ethereum
+                          </div>
                         </div>
-                      }
-                      accent=""
-                    />
-                    <Metric
-                      label="Entry fee"
-                      value={
-                        <div className="flex items-center justify-between gap-2 text-lg">
-                          <span>5</span>
-                          <span className="inline-flex items-center gap-2 text-sm font-semibold text-white">
+                      </div>
+
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between text-xs text-slate-400">
+                          <label>You deposit</label>
+                          <span>Wallet balance: 12,000 USDC</span>
+                        </div>
+                        <div className="relative">
+                          <input
+                            value={zapAmount}
+                            onChange={(e) => setZapAmount(e.target.value)}
+                            className="w-full rounded-xl border border-white/10 bg-slate-950/70 px-4 py-3 pr-28 text-lg font-mono text-white focus:border-cyan-400/60 focus:outline-none"
+                            placeholder="0.0"
+                          />
+                          <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center gap-2 text-sm font-semibold text-white">
                             <img
                               src={usdcLogo}
                               alt="USDC"
-                              className="h-6 w-6 rounded-full bg-slate-900 p-[1px]"
+                              className="h-8 w-8 rounded-full bg-slate-900 p-[1px]"
                             />
                             USDC
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="grid gap-3 md:grid-cols-2">
+                        <Metric
+                          label="You receive"
+                          value={
+                            <div className="flex items-center justify-between gap-2 text-lg">
+                              <span>
+                                {(Number(zapAmount || 0) / 1.01).toFixed(2)}
+                              </span>
+                              <span className="inline-flex items-center gap-2 text-sm font-semibold text-white">
+                                <img
+                                  src={usdlLogo}
+                                  alt="USDL"
+                                  className="h-6 w-6 rounded-full bg-slate-900 p-[1px]"
+                                />
+                                USDL
+                              </span>
+                            </div>
+                          }
+                          accent=""
+                        />
+                        <Metric
+                          label="Entry fee"
+                          value={
+                            <div className="flex items-center justify-between gap-2 text-lg">
+                              <span>5</span>
+                              <span className="inline-flex items-center gap-2 text-sm font-semibold text-white">
+                                <img
+                                  src={usdcLogo}
+                                  alt="USDC"
+                                  className="h-6 w-6 rounded-full bg-slate-900 p-[1px]"
+                                />
+                                USDC
+                              </span>
+                            </div>
+                          }
+                          accent=""
+                        />
+                      </div>
+
+                      <button className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-cyan-400 to-yellow-300 px-4 py-3 text-sm font-semibold text-slate-950 shadow-xl shadow-cyan-400/30 transition hover:-translate-y-0.5 focus:outline-none">
+                        <Zap className="h-4 w-4" />
+                        Deposit
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <div>
+                        <label className="text-xs text-slate-400">Chain</label>
+                        <div className="mt-2 flex items-center gap-2 rounded-xl border border-white/10 bg-slate-900/80 px-4 py-3 text-sm font-semibold text-white">
+                          <img
+                            src={chainIcons.Ethereum}
+                            alt="Ethereum"
+                            className="h-6 w-6 rounded-full bg-slate-900 p-[1px]"
+                          />
+                          Ethereum
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between text-xs text-slate-400">
+                          <label>You withdraw</label>
+                          <span>Wallet balance: 5,600 USDL</span>
+                        </div>
+                        <div className="relative">
+                          <input
+                            value={withdrawAmount}
+                            onChange={(e) => setWithdrawAmount(e.target.value)}
+                            className="w-full rounded-xl border border-white/10 bg-slate-950/70 px-4 py-3 pr-28 text-lg font-mono text-white focus:border-cyan-400/60 focus:outline-none"
+                            placeholder="0.0"
+                          />
+                          <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center gap-2 text-sm font-semibold text-white">
+                            <img
+                              src={usdlLogo}
+                              alt="USDL"
+                              className="h-8 w-8 rounded-full bg-slate-900 p-[1px]"
+                            />
+                            USDL
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="grid gap-3 md:grid-cols-2">
+                        <Metric
+                          label="EST. receive"
+                          value={
+                            <div className="flex items-center justify-between gap-2 text-lg">
+                              <span>
+                                {Math.max(
+                                  0,
+                                  Number(withdrawAmount || 0) - 5
+                                ).toFixed(2)}
+                              </span>
+                              <span className="inline-flex items-center gap-2 text-sm font-semibold text-white">
+                                <img
+                                  src={usdcLogo}
+                                  alt="USDC"
+                                  className="h-6 w-6 rounded-full bg-slate-900 p-[1px]"
+                                />
+                                USDC
+                              </span>
+                            </div>
+                          }
+                          accent=""
+                        />
+                        <Metric
+                          label="Withdraw fee"
+                          value={
+                            <div className="flex items-center justify-between gap-2 text-lg">
+                              <span>5</span>
+                              <span className="inline-flex items-center gap-2 text-sm font-semibold text-white">
+                                <img
+                                  src={usdcLogo}
+                                  alt="USDC"
+                                  className="h-6 w-6 rounded-full bg-slate-900 p-[1px]"
+                                />
+                                USDC
+                              </span>
+                            </div>
+                          }
+                          accent=""
+                        />
+                      </div>
+
+                      <div className="text-xs text-slate-300">
+                        Estimated Arrival: 3 Hours
+                      </div>
+
+                      <button className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-amber-400 via-orange-400 to-yellow-300 px-4 py-3 text-sm font-semibold text-slate-950 shadow-xl shadow-amber-400/30 transition hover:-translate-y-0.5 focus:outline-none">
+                        <Zap className="h-4 w-4" />
+                        Withdraw
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              <div className="mt-8 rounded-3xl border border-white/10 bg-slate-950/70 p-5 shadow-inner shadow-cyan-500/15">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold text-white">
+                    Transaction History
+                  </h3>
+                  <span className="text-xs text-slate-400">
+                    Recent on-chain actions
+                  </span>
+                </div>
+                <div className="mt-4 overflow-hidden rounded-2xl border border-white/5">
+                  <div className="grid grid-cols-[1.2fr_1.6fr_1.2fr_1fr] bg-slate-900/60 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-slate-300">
+                    <span>Time</span>
+                    <span>Action</span>
+                    <span className="text-right">Amount</span>
+                    <span className="text-right">Txn</span>
+                  </div>
+                  <div className="divide-y divide-white/5 bg-slate-900/40">
+                    {txPageData.map((tx) => (
+                      <div
+                        key={tx.tx}
+                        className="grid grid-cols-[1.2fr_1.6fr_1.2fr_1fr] items-center px-4 py-3 text-sm text-slate-200 hover:bg-white/5"
+                      >
+                        <span className="text-xs text-slate-400">
+                          {tx.time}
+                        </span>
+                        <div className="space-y-1">
+                          <span
+                            className={`inline-flex items-center gap-2 rounded-full px-2 py-1 text-xs font-semibold ${
+                              tx.action === "Deposit"
+                                ? "bg-cyan-400/15 text-cyan-100"
+                                : tx.action === "Withdraw"
+                                ? "bg-amber-400/15 text-amber-200"
+                                : "bg-white/10 text-slate-200"
+                            }`}
+                          >
+                            {tx.action}
                           </span>
                         </div>
+                        <div className="group relative flex items-center justify-end gap-2 font-mono text-white">
+                          <img
+                            src={
+                              tx.amount.includes("USDC") ? usdcLogo : usdlLogo
+                            }
+                            alt="asset"
+                            className="h-5 w-5 rounded-full bg-slate-900 p-[1px]"
+                          />
+                          <span>{tx.amount}</span>
+                          {(tx.receive || tx.burn) && (
+                            <div className="pointer-events-none absolute right-0 top-full z-20 hidden whitespace-nowrap rounded-lg border border-white/10 bg-slate-900/90 px-3 py-2 text-[11px] text-slate-100 shadow-lg shadow-cyan-500/20 group-hover:block">
+                              {tx.receive && (
+                                <div className="flex items-center gap-2">
+                                  <img
+                                    src={usdlLogo}
+                                    alt="USDL"
+                                    className="h-4 w-4 rounded-full bg-slate-900 p-[1px]"
+                                  />
+                                  <span>Receive {tx.receive}</span>
+                                </div>
+                              )}
+                              {tx.burn && (
+                                <div className="flex items-center gap-2">
+                                  <img
+                                    src={usdlLogo}
+                                    alt="USDL"
+                                    className="h-4 w-4 rounded-full bg-slate-900 p-[1px]"
+                                  />
+                                  <span>Burn {tx.burn}</span>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                        <a
+                          href="#"
+                          className="text-right text-xs font-semibold text-cyan-200 hover:underline"
+                        >
+                          {tx.tx}
+                        </a>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex items-center justify-center gap-2 bg-slate-900/50 px-4 py-2 text-xs text-slate-300">
+                    <button
+                      onClick={() => setTxPage((p) => Math.max(0, p - 1))}
+                      disabled={txPage === 0}
+                      className={`rounded-full px-2 py-1 ${
+                        txPage === 0 ? "opacity-40" : "hover:bg-white/10"
+                      }`}
+                    >
+                      Prev
+                    </button>
+                    <span>
+                      Page {txPage + 1} / {txTotalPages}
+                    </span>
+                    <button
+                      onClick={() =>
+                        setTxPage((p) => Math.min(txTotalPages - 1, p + 1))
                       }
-                      accent=""
+                      disabled={txPage >= txTotalPages - 1}
+                      className={`rounded-full px-2 py-1 ${
+                        txPage >= txTotalPages - 1
+                          ? "opacity-40"
+                          : "hover:bg-white/10"
+                      }`}
+                    >
+                      Next
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </section>
+          )}
+
+          {activeTab === "Stake" && (
+            <section className="relative overflow-hidden rounded-3xl border border-white/5 bg-gradient-to-br from-slate-900 via-slate-950 to-slate-900 p-6 shadow-xl shadow-cyan-500/15 backdrop-blur">
+              <div className="absolute -left-16 -top-16 h-48 w-48 rounded-full bg-gradient-to-br from-cyan-400/10 via-transparent to-yellow-300/10 blur-3xl" />
+              <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                <div>
+                  <h2 className="text-2xl font-semibold text-white">
+                    Stake USDL, earn extra points
+                  </h2>
+                  <p className="text-sm text-slate-300">
+                    Lock USDL to farm Lighter &amp; Brighter points on top of
+                    base yield.
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-6 grid gap-5 lg:grid-cols-2">
+                <div className="space-y-4 rounded-2xl border border-white/10 bg-slate-950/70 p-5 shadow-inner shadow-cyan-500/10">
+                  <div className="flex items-center justify-between text-xs text-slate-400">
+                    <label>Stake USDL</label>
+                    <span>Wallet balance: 5,600 USDL</span>
+                  </div>
+                  <div className="relative">
+                    <input
+                      value={stakeAmount}
+                      onChange={(e) => setStakeAmount(e.target.value)}
+                      className="w-full rounded-xl border border-white/10 bg-slate-950/70 px-4 py-3 pr-28 text-lg font-mono text-white focus:border-cyan-400/60 focus:outline-none"
+                      placeholder="0.0"
+                    />
+                    <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center gap-2 text-sm font-semibold text-white">
+                      <img
+                        src={usdlLogo}
+                        alt="USDL"
+                        className="h-8 w-8 rounded-full bg-slate-900 p-[1px]"
+                      />
+                      USDL
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between text-xs text-slate-400">
+                    <span>Stake period (longer = higher boost)</span>
+                    <div className="flex gap-2">
+                      {(["30d", "90d", "180d", "365d"] as const).map(
+                        (period) => (
+                          <button
+                            key={period}
+                            onClick={() => setStakePeriod(period)}
+                            className={`rounded-full px-3 py-1 font-semibold ${
+                              stakePeriod === period
+                                ? "bg-cyan-400/20 text-cyan-100"
+                                : "bg-white/5 text-slate-300 hover:text-white"
+                            }`}
+                          >
+                            {period}
+                          </button>
+                        )
+                      )}
+                    </div>
+                  </div>
+                  <div className="text-xs text-slate-400">
+                    Unlock at: {new Date(unlockAt).toLocaleString()}
+                  </div>
+                  <div className="grid gap-3 md:grid-cols-3 lg:grid-cols-2">
+                    <Metric
+                      label="You earn lighter points"
+                      value={
+                        <span className="flex items-center gap-2">
+                          {totalLighter.toFixed(2)}
+                          <span className="text-xs text-slate-300">pts</span>
+                          <span className="text-[11px] text-cyan-200">
+                            ({stakePointRates[stakePeriod]?.lighter}x)
+                          </span>
+                        </span>
+                      }
+                    />
+                    <Metric
+                      label="You earn brighter points"
+                      value={
+                        <span className="flex items-center gap-2">
+                          {totalBrighter.toFixed(2)}
+                          <span className="text-xs text-slate-300">pts</span>
+                          <span className="text-[11px] text-cyan-200">
+                            ({stakePointRates[stakePeriod]?.brighter}x)
+                          </span>
+                        </span>
+                      }
                     />
                   </div>
 
-                  <button
-                    onClick={() => setZapOpen(true)}
-                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-cyan-400 to-yellow-300 px-4 py-3 text-sm font-semibold text-slate-950 shadow-xl shadow-cyan-400/30 transition hover:-translate-y-0.5 focus:outline-none"
-                  >
+                  <button className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-cyan-400 to-emerald-400 px-4 py-3 text-sm font-semibold text-slate-950 shadow-xl shadow-cyan-400/30 transition hover:-translate-y-0.5 focus:outline-none">
                     <Zap className="h-4 w-4" />
-                    Deposit
+                    Stake USDL
                   </button>
+                </div>
+
+                <div className="space-y-3 rounded-2xl border border-white/10 bg-slate-950/70 p-5 shadow-inner shadow-cyan-500/15">
+                  <div className="grid grid-cols-2 gap-3 text-xs text-slate-300">
+                    <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-3">
+                      <div className="text-slate-400">Your lighter points</div>
+                      <div className="font-mono text-lg text-cyan-100">
+                        {(claimReady ? totalLighter : 0).toFixed(2)}
+                      </div>
+                      <div className="text-[11px] text-slate-400">
+                        Earned points
+                      </div>
+                    </div>
+                    <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-3">
+                      <div className="text-slate-400">Your brighter points</div>
+                      <div className="font-mono text-lg text-cyan-100">
+                        {(claimReady ? totalBrighter : 0).toFixed(2)}
+                      </div>
+                      <div className="text-[11px] text-slate-400">
+                        Earned points
+                      </div>
+                    </div>
+                  </div>
+                  <p className="text-sm font-semibold text-white">
+                    Your positions
+                  </p>
+                  <div className="space-y-3">
+                    {stakePositions.map((pos) => {
+                      const ready = nowTs >= pos.unlockAt;
+                      const earnedL =
+                        (pos.amount || 0) * (currentRates?.lighter ?? 0);
+                      const earnedB =
+                        (pos.amount || 0) * (currentRates?.brighter ?? 0);
+                      return (
+                        <div
+                          key={pos.id}
+                          className="flex items-center justify-between rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white"
+                        >
+                          <div>
+                            <div className="text-xs uppercase tracking-[0.15em] text-slate-400">
+                              Staked amount
+                            </div>
+                            <div className="font-mono text-white">
+                              {pos.amount} USDL
+                            </div>
+                            <div className="text-[11px] text-slate-400">
+                              Unlock at{" "}
+                              {new Date(pos.unlockAt).toLocaleString()}
+                            </div>
+                            <div className="text-[11px] text-cyan-100">
+                              Earned: {earnedL.toFixed(2)} L /{" "}
+                              {earnedB.toFixed(2)} B
+                            </div>
+                          </div>
+                          <button
+                            disabled={!ready}
+                            title={
+                              ready
+                                ? "Claim points"
+                                : `Claimable at ${new Date(
+                                    pos.unlockAt
+                                  ).toLocaleString()}`
+                            }
+                            className={`rounded-full px-4 py-2 text-xs font-semibold transition ${
+                              ready
+                                ? "bg-gradient-to-r from-cyan-400 to-emerald-400 text-slate-950 shadow-cyan-400/30 shadow-lg"
+                                : "cursor-not-allowed bg-white/10 text-slate-500"
+                            }`}
+                          >
+                            Claim
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
             </section>
@@ -673,6 +1242,37 @@ function OverviewRow({
       <span className={`font-mono text-slate-100 ${accent ?? ""}`}>
         {value}
       </span>
+    </div>
+  );
+}
+
+function HoverAmountCard({ label, amount }: { label: string; amount: string }) {
+  const [hover, setHover] = useState(false);
+  const usdlEstimate = label.toLowerCase().includes("total")
+    ? "~ 128.4M USDL"
+    : "~ 12,400 USDL";
+  return (
+    <div
+      className="relative rounded-2xl border border-white/10 bg-white/5 px-4 py-3"
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+    >
+      <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
+        {label}
+      </p>
+      <p className="text-2xl font-semibold text-white">{amount}</p>
+      {hover && (
+        <div className="absolute left-0 top-full mt-2 w-48 rounded-xl border border-white/10 bg-slate-900/90 p-3 text-xs text-slate-200 shadow-lg shadow-cyan-500/20">
+          <div className="flex items-center gap-2">
+            <img
+              src={usdlLogo}
+              alt="USDL"
+              className="h-5 w-5 rounded-full bg-slate-900 p-[1px]"
+            />
+            <span>{usdlEstimate}</span>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -914,4 +1514,18 @@ function buildAreaPath(
   if (!points.length) return "";
   const line = buildLinePath(points);
   return `${line} L ${width} ${height} L 0 ${height} Z`;
+}
+
+function formatDuration(ms: number) {
+  const totalSec = Math.floor(ms / 1000);
+  const h = Math.floor(totalSec / 3600)
+    .toString()
+    .padStart(2, "0");
+  const m = Math.floor((totalSec % 3600) / 60)
+    .toString()
+    .padStart(2, "0");
+  const s = Math.floor(totalSec % 60)
+    .toString()
+    .padStart(2, "0");
+  return `${h}:${m}:${s}`;
 }
