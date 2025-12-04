@@ -8,6 +8,7 @@ import {
   ChevronDown,
   X,
 } from "lucide-react";
+import brighterLogo from "./Assets/brighter.png";
 import llpLogo from "./Assets/LLP_logo.jpg";
 import usdcLogo from "./Assets/USDC_logo.png";
 import usdlLogo from "./Assets/usdl.png";
@@ -207,9 +208,11 @@ export default function BrighterApp() {
       <div className="relative mx-auto max-w-6xl px-6 py-10 md:px-10">
         <header className="flex items-center justify-between gap-4 rounded-2xl border border-white/5 bg-white/5 p-4 backdrop-blur">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-400 to-yellow-300 text-slate-900 font-semibold shadow-lg shadow-cyan-400/30">
-              B
-            </div>
+            <img
+              src={brighterLogo}
+              alt="Brighter"
+              className="h-14 w-14 object-contain"
+            />
             <div>
               <p className="text-lg font-semibold tracking-tight">Brighter</p>
             </div>
@@ -228,7 +231,11 @@ export default function BrighterApp() {
                         : "hover:text-white"
                     }`}
                   >
-                    {item === "Deposit" ? "Earn" : item === "Earn" ? "Supply" : item}
+                    {item === "Deposit"
+                      ? "Earn"
+                      : item === "Earn"
+                      ? "Supply"
+                      : item}
                   </button>
                 );
               }
@@ -439,7 +446,7 @@ export default function BrighterApp() {
                 </div>
               </div>
 
-              <div className="mt-4 grid gap-3 md:grid-cols-5">
+              <div className="mt-4 grid gap-3 md:grid-cols-3">
                 <HoverAmountCard
                   label="Total deposited"
                   amount={totalDeposited}
@@ -448,18 +455,6 @@ export default function BrighterApp() {
                   label="Your deposited"
                   amount={yourDeposited}
                 />
-                <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
-                  <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
-                    Lighter points
-                  </p>
-                  <p className="text-2xl font-semibold text-white">12,840</p>
-                </div>
-                <div className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
-                  <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
-                    Brighter points
-                  </p>
-                  <p className="text-2xl font-semibold text-white">6,420</p>
-                </div>
                 <div
                   className="relative rounded-2xl border border-white/10 bg-gradient-to-r from-cyan-400/15 via-yellow-300/15 to-cyan-400/15 px-4 py-3"
                   onMouseEnter={() => setAprHover(true)}
@@ -476,18 +471,6 @@ export default function BrighterApp() {
                       <div className="flex items-center justify-between">
                         <span>LLP yield</span>
                         <span className="text-cyan-100">35%</span>
-                      </div>
-                      <div className="mt-2 flex items-center justify-between">
-                        <span>Lighter point</span>
-                        <span className="text-cyan-100">
-                          0.004/USDC/day (~20%)
-                        </span>
-                      </div>
-                      <div className="mt-2 flex items-center justify-between">
-                        <span>Brighter point</span>
-                        <span className="text-cyan-100">
-                          0.2/USDC/day (~8%)
-                        </span>
                       </div>
                     </div>
                   )}
@@ -934,8 +917,8 @@ export default function BrighterApp() {
                   </button>
                 </div>
 
-                <div className="space-y-3 rounded-2xl border border-white/10 bg-slate-950/70 p-5 shadow-inner shadow-cyan-500/15">
-                  <div className="grid grid-cols-2 gap-3 text-xs text-slate-300">
+                <div className="space-y-4 rounded-2xl border border-white/10 bg-slate-950/70 p-5 shadow-inner shadow-cyan-500/15">
+                  <div className="grid grid-cols-1 gap-3 text-xs text-slate-300 sm:grid-cols-2">
                     <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-3">
                       <div className="text-slate-400">Your lighter points</div>
                       <div className="font-mono text-lg text-cyan-100">
@@ -955,57 +938,60 @@ export default function BrighterApp() {
                       </div>
                     </div>
                   </div>
-                  <p className="text-sm font-semibold text-white">
-                    Your positions
-                  </p>
-                  <div className="space-y-3">
-                    {stakePositions.map((pos) => {
-                      const ready = nowTs >= pos.unlockAt;
-                      const earnedL =
-                        (pos.amount || 0) * (currentRates?.lighter ?? 0);
-                      const earnedB =
-                        (pos.amount || 0) * (currentRates?.brighter ?? 0);
-                      return (
-                        <div
-                          key={pos.id}
-                          className="flex items-center justify-between rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white"
-                        >
-                          <div>
-                            <div className="text-xs uppercase tracking-[0.15em] text-slate-400">
-                              Staked amount
-                            </div>
-                            <div className="font-mono text-white">
-                              {pos.amount} USDL
-                            </div>
-                            <div className="text-[11px] text-slate-400">
-                              Unlock at{" "}
-                              {new Date(pos.unlockAt).toLocaleString()}
-                            </div>
-                            <div className="text-[11px] text-cyan-100">
-                              Earned: {earnedL.toFixed(2)} L /{" "}
-                              {earnedB.toFixed(2)} B
-                            </div>
-                          </div>
-                          <button
-                            disabled={!ready}
-                            title={
-                              ready
-                                ? "Claim points"
-                                : `Claimable at ${new Date(
-                                    pos.unlockAt
-                                  ).toLocaleString()}`
-                            }
-                            className={`rounded-full px-4 py-2 text-xs font-semibold transition ${
-                              ready
-                                ? "bg-gradient-to-r from-cyan-400 to-emerald-400 text-slate-950 shadow-cyan-400/30 shadow-lg"
-                                : "cursor-not-allowed bg-white/10 text-slate-500"
-                            }`}
+
+                  <div className="space-y-3 rounded-2xl border border-white/10 bg-white/5 p-4">
+                    <p className="text-sm font-semibold text-white">
+                      Your positions
+                    </p>
+                    <div className="space-y-3">
+                      {stakePositions.map((pos) => {
+                        const ready = nowTs >= pos.unlockAt;
+                        const earnedL =
+                          (pos.amount || 0) * (currentRates?.lighter ?? 0);
+                        const earnedB =
+                          (pos.amount || 0) * (currentRates?.brighter ?? 0);
+                        return (
+                          <div
+                            key={pos.id}
+                            className="flex items-center justify-between rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white"
                           >
-                            Claim
-                          </button>
-                        </div>
-                      );
-                    })}
+                            <div>
+                              <div className="text-xs uppercase tracking-[0.15em] text-slate-400">
+                                Staked amount
+                              </div>
+                              <div className="font-mono text-white">
+                                {pos.amount} USDL
+                              </div>
+                              <div className="text-[11px] text-slate-400">
+                                Unlock at{" "}
+                                {new Date(pos.unlockAt).toLocaleString()}
+                              </div>
+                              <div className="text-[11px] text-cyan-100">
+                                Earned: {earnedL.toFixed(2)} L /{" "}
+                                {earnedB.toFixed(2)} B
+                              </div>
+                            </div>
+                            <button
+                              disabled={!ready}
+                              title={
+                                ready
+                                  ? "Claim points"
+                                  : `Claimable at ${new Date(
+                                      pos.unlockAt
+                                    ).toLocaleString()}`
+                              }
+                              className={`rounded-full px-4 py-2 text-xs font-semibold transition ${
+                                ready
+                                  ? "bg-gradient-to-r from-cyan-400 to-emerald-400 text-slate-950 shadow-cyan-400/30 shadow-lg"
+                                  : "cursor-not-allowed bg-white/10 text-slate-500"
+                              }`}
+                            >
+                              Claim
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
                 </div>
               </div>
