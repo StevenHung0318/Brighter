@@ -460,6 +460,9 @@ export default function BrighterApp() {
                   onMouseEnter={() => setAprHover(true)}
                   onMouseLeave={() => setAprHover(false)}
                 >
+                  <div className="absolute -top-3 right-3 rounded-full border border-white/30 bg-cyan-300/90 px-3 py-1 text-[10px] font-bold uppercase tracking-wide text-slate-900 shadow-lg shadow-cyan-400/40">
+                    100% deposit to LLP
+                  </div>
                   <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
                     APR
                   </p>
