@@ -23,7 +23,7 @@ const chainIcons: Record<string, string> = {
 };
 
 export default function BrighterApp() {
-  const [activeTab, setActiveTab] = useState<Tab>("Loop");
+  const [activeTab, setActiveTab] = useState<Tab>("Deposit");
   const [leverage, setLeverage] = useState(4);
   const [llpDeposit, setLlpDeposit] = useState("2500");
   const [usdcSupply, setUsdcSupply] = useState("5000");
@@ -43,6 +43,8 @@ export default function BrighterApp() {
     "1W" | "1M" | "3M" | "1Y" | "ALL"
   >("ALL");
   const [aprHover, setAprHover] = useState(false);
+  const [depositPercent, setDepositPercent] = useState(25);
+  const [showTxHistory, setShowTxHistory] = useState(false);
   const totalDeposited = "$128.4M";
   const yourDeposited = "$12,400";
   const headlineApr = "63%";
@@ -104,6 +106,35 @@ export default function BrighterApp() {
     const id = setInterval(() => setNowTs(Date.now()), 1000);
     return () => clearInterval(id);
   }, []);
+
+  // Animate deposit percentage from 25% to 100%
+  useEffect(() => {
+    if (activeTab !== "Deposit") return;
+
+    const duration = 3500; // 3.5 seconds (slower)
+    const startValue = 25;
+    const endValue = 100;
+    const startTime = Date.now();
+
+    const animate = () => {
+      const elapsed = Date.now() - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+
+      // Easing function for smooth animation
+      const easeOutQuart = 1 - Math.pow(1 - progress, 4);
+      const currentValue = startValue + (endValue - startValue) * easeOutQuart;
+
+      setDepositPercent(Math.round(currentValue));
+
+      if (progress < 1) {
+        requestAnimationFrame(animate);
+      }
+    };
+
+    // Reset and start animation
+    setDepositPercent(startValue);
+    requestAnimationFrame(animate);
+  }, [activeTab]);
   const txHistory = [
     {
       time: "2025-12-04 06:42:16",
@@ -176,6 +207,16 @@ export default function BrighterApp() {
       2.68, 2.75, 2.82, 2.95, 3.02, 3.1, 3.18, 3.26, 3.3, 3.38, 3.44, 3.52, 3.6,
       3.55, 3.62, 3.7, 3.78, 3.82, 3.88, 3.92, 3.98, 4.05, 4.1, 4.18, 4.12,
       4.22, 4.28, 4.35, 4.4, 4.48, 4.52, 4.6, 4.68,
+    ],
+    []
+  );
+
+  const aprHistorySeries = useMemo(
+    () => [
+      45, 47, 48, 46, 49, 51, 52, 50, 53, 55, 54, 56, 58, 57, 59, 60, 58, 61,
+      62, 60, 63, 64, 62, 65, 63, 64, 66, 65, 63, 64, 62, 63, 65, 64, 63, 65,
+      64, 63, 62, 63, 64, 63, 62, 63, 64, 63, 62, 63, 64, 63, 62, 63, 64, 63,
+      62, 63, 64, 63,
     ],
     []
   );
@@ -435,15 +476,43 @@ export default function BrighterApp() {
           {activeTab === "Deposit" && (
             <section className="relative overflow-hidden rounded-3xl border border-white/5 bg-gradient-to-br from-slate-900 via-slate-950 to-slate-900 p-6 shadow-xl shadow-cyan-500/15 backdrop-blur">
               <div className="absolute -right-16 -bottom-16 h-56 w-56 rounded-full bg-gradient-to-tr from-cyan-400/15 via-transparent to-yellow-300/20 blur-3xl" />
-              <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
                 <div>
-                  <h2 className="mt-3 text-2xl font-semibold text-white">
-                    Deposit USDC to mint USDL
+                  <h2 className="mt-3 text-2xl font-semibold text-white md:text-3xl">
+                    Deposit USDC & Get{" "}
+                    <span className="inline-flex items-baseline gap-2 bg-gradient-to-r from-cyan-400 to-yellow-300 bg-clip-text text-transparent">
+                      <span className="text-4xl font-bold md:text-5xl">
+                        {depositPercent}%
+                      </span>
+                      <span className="text-2xl md:text-3xl">LLP Allocation</span>
+                    </span>
                   </h2>
-                  <p className="text-sm text-slate-300">
-                    USDL is a yield-bearing stablecoin powered by Lighter LLP
+                  <p className="mt-2 text-sm text-slate-300">
+                    USDL is a yield-bearing stablecoin powered by Lighter LLP —{" "}
+                    <span className="font-semibold text-cyan-200">
+                      100% unconditional deposit allocation
+                    </span>
                   </p>
                 </div>
+                <button
+                  onClick={() => setShowTxHistory(true)}
+                  className="mt-3 flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm font-semibold text-slate-200 transition hover:bg-white/10 focus:outline-none"
+                >
+                  <svg
+                    className="h-4 w-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                  History
+                </button>
               </div>
 
               <div className="mt-4 grid gap-3 md:grid-cols-3">
@@ -480,21 +549,16 @@ export default function BrighterApp() {
                 </div>
               </div>
 
-              <div className="mt-6 grid gap-5 lg:grid-cols-2 xl:grid-cols-2">
-                <USDLPriceCard
-                  data={usdlPriceSeries}
-                  range={priceRange}
-                  onRangeChange={setPriceRange}
-                />
-
-                <div className="space-y-4 rounded-2xl border border-white/10 bg-slate-950/70 p-5 shadow-inner shadow-cyan-500/10 lg:row-span-1">
-                  <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-slate-900/80 p-1 text-xs text-slate-200">
+              {/* Main Deposit/Withdraw Section - Enhanced */}
+              <div className="mt-6 space-y-6">
+                <div className="space-y-6 rounded-2xl border border-white/10 bg-slate-950/70 p-6 shadow-inner shadow-cyan-500/10">
+                  <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-slate-900/80 p-1 text-sm text-slate-200">
                     {["deposit", "withdraw"].map((mode) => {
                       const isActive = depositMode === mode;
                       return (
                         <button
                           key={mode}
-                          className={`rounded-full px-4 py-2 font-semibold transition ${
+                          className={`rounded-full px-6 py-2.5 font-semibold transition ${
                             isActive
                               ? "bg-gradient-to-r from-cyan-400 to-sky-500 text-slate-950 shadow-md shadow-cyan-400/30"
                               : "text-slate-300 hover:text-white"
@@ -511,21 +575,21 @@ export default function BrighterApp() {
 
                   {depositMode === "deposit" ? (
                     <>
-                      <div className="grid gap-3 md:grid-cols-2">
+                      <div className="grid gap-4 md:grid-cols-2">
                         <div>
-                          <label className="text-xs text-slate-400">
+                          <label className="text-sm font-medium text-slate-300">
                             Source chain
                           </label>
                           <div className="relative mt-2">
                             <select
                               value={zapChain}
                               onChange={(e) => setZapChain(e.target.value)}
-                              className="w-full appearance-none rounded-xl border border-white/10 bg-slate-900/80 px-4 py-3 pl-12 pr-10 text-sm text-white focus:border-cyan-400/60 focus:outline-none"
+                              className="w-full appearance-none rounded-xl border border-white/10 bg-slate-900/80 px-4 py-4 pl-12 pr-10 text-base text-white focus:border-cyan-400/60 focus:outline-none"
                               style={{
                                 backgroundImage: `url(${chainIcons[zapChain]})`,
                                 backgroundRepeat: "no-repeat",
                                 backgroundPosition: "12px center",
-                                backgroundSize: "20px 20px",
+                                backgroundSize: "24px 24px",
                               }}
                             >
                               {[
@@ -537,14 +601,14 @@ export default function BrighterApp() {
                                 <option key={chain}>{chain}</option>
                               ))}
                             </select>
-                            <ChevronDown className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                            <ChevronDown className="absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
                           </div>
                         </div>
                         <div>
-                          <label className="text-xs text-slate-400">
+                          <label className="text-sm font-medium text-slate-300">
                             Destination
                           </label>
-                          <div className="mt-2 flex items-center gap-2 rounded-xl border border-cyan-300/30 bg-cyan-300/10 px-4 py-3 text-sm font-semibold text-cyan-100">
+                          <div className="mt-2 flex items-center gap-3 rounded-xl border border-cyan-300/30 bg-cyan-300/10 px-4 py-4 text-base font-semibold text-cyan-100">
                             <img
                               src={chainIcons.Ethereum}
                               alt="Ethereum"
@@ -555,78 +619,54 @@ export default function BrighterApp() {
                         </div>
                       </div>
 
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between text-xs text-slate-400">
-                          <label>You deposit</label>
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between text-sm text-slate-300">
+                          <label className="font-medium">You deposit</label>
                           <span>Wallet balance: 12,000 USDC</span>
                         </div>
                         <div className="relative">
                           <input
                             value={zapAmount}
                             onChange={(e) => setZapAmount(e.target.value)}
-                            className="w-full rounded-xl border border-white/10 bg-slate-950/70 px-4 py-3 pr-28 text-lg font-mono text-white focus:border-cyan-400/60 focus:outline-none"
+                            className="w-full rounded-xl border border-white/10 bg-slate-950/70 px-5 py-5 pr-32 text-3xl font-mono text-white focus:border-cyan-400/60 focus:outline-none"
                             placeholder="0.0"
                           />
-                          <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center gap-2 text-sm font-semibold text-white">
+                          <div className="pointer-events-none absolute inset-y-0 right-4 flex items-center gap-2 text-base font-semibold text-white">
                             <img
                               src={usdcLogo}
                               alt="USDC"
-                              className="h-8 w-8 rounded-full bg-slate-900 p-[1px]"
+                              className="h-9 w-9 rounded-full bg-slate-900 p-[1px]"
                             />
                             USDC
                           </div>
                         </div>
                       </div>
 
-                      <div className="grid gap-3 md:grid-cols-2">
-                        <Metric
-                          label="You receive"
-                          value={
-                            <div className="flex items-center justify-between gap-2 text-lg">
-                              <span>
-                                {(Number(zapAmount || 0) / 1.01).toFixed(2)}
-                              </span>
-                              <span className="inline-flex items-center gap-2 text-sm font-semibold text-white">
-                                <img
-                                  src={usdlLogo}
-                                  alt="USDL"
-                                  className="h-6 w-6 rounded-full bg-slate-900 p-[1px]"
-                                />
-                                USDL
-                              </span>
-                            </div>
-                          }
-                          accent=""
-                        />
-                        <Metric
-                          label="Entry fee"
-                          value={
-                            <div className="flex items-center justify-between gap-2 text-lg">
-                              <span>5</span>
-                              <span className="inline-flex items-center gap-2 text-sm font-semibold text-white">
-                                <img
-                                  src={usdcLogo}
-                                  alt="USDC"
-                                  className="h-6 w-6 rounded-full bg-slate-900 p-[1px]"
-                                />
-                                USDC
-                              </span>
-                            </div>
-                          }
-                          accent=""
-                        />
+                      <div className="rounded-xl border border-white/5 bg-slate-900/40 p-4">
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-slate-400">You receive</span>
+                          <div className="flex items-center gap-2 text-xl font-semibold text-white">
+                            <span>{(Number(zapAmount || 0) / 1.01).toFixed(2)}</span>
+                            <img
+                              src={usdlLogo}
+                              alt="USDL"
+                              className="h-6 w-6 rounded-full bg-slate-900 p-[1px]"
+                            />
+                            <span className="text-base">USDL</span>
+                          </div>
+                        </div>
                       </div>
 
-                      <button className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-cyan-400 to-yellow-300 px-4 py-3 text-sm font-semibold text-slate-950 shadow-xl shadow-cyan-400/30 transition hover:-translate-y-0.5 focus:outline-none">
-                        <Zap className="h-4 w-4" />
+                      <button className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-cyan-400 to-yellow-300 px-6 py-4 text-base font-semibold text-slate-950 shadow-xl shadow-cyan-400/30 transition hover:-translate-y-0.5 focus:outline-none">
+                        <Zap className="h-5 w-5" />
                         Deposit
                       </button>
                     </>
                   ) : (
                     <>
                       <div>
-                        <label className="text-xs text-slate-400">Chain</label>
-                        <div className="mt-2 flex items-center gap-2 rounded-xl border border-white/10 bg-slate-900/80 px-4 py-3 text-sm font-semibold text-white">
+                        <label className="text-sm font-medium text-slate-300">Chain</label>
+                        <div className="mt-2 flex items-center gap-3 rounded-xl border border-white/10 bg-slate-900/80 px-4 py-4 text-base font-semibold text-white">
                           <img
                             src={chainIcons.Ethereum}
                             alt="Ethereum"
@@ -636,194 +676,213 @@ export default function BrighterApp() {
                         </div>
                       </div>
 
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between text-xs text-slate-400">
-                          <label>You withdraw</label>
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between text-sm text-slate-300">
+                          <label className="font-medium">You withdraw</label>
                           <span>Wallet balance: 5,600 USDL</span>
                         </div>
                         <div className="relative">
                           <input
                             value={withdrawAmount}
                             onChange={(e) => setWithdrawAmount(e.target.value)}
-                            className="w-full rounded-xl border border-white/10 bg-slate-950/70 px-4 py-3 pr-28 text-lg font-mono text-white focus:border-cyan-400/60 focus:outline-none"
+                            className="w-full rounded-xl border border-white/10 bg-slate-950/70 px-5 py-5 pr-32 text-3xl font-mono text-white focus:border-cyan-400/60 focus:outline-none"
                             placeholder="0.0"
                           />
-                          <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center gap-2 text-sm font-semibold text-white">
+                          <div className="pointer-events-none absolute inset-y-0 right-4 flex items-center gap-2 text-base font-semibold text-white">
                             <img
                               src={usdlLogo}
                               alt="USDL"
-                              className="h-8 w-8 rounded-full bg-slate-900 p-[1px]"
+                              className="h-9 w-9 rounded-full bg-slate-900 p-[1px]"
                             />
                             USDL
                           </div>
                         </div>
                       </div>
 
-                      <div className="grid gap-3 md:grid-cols-2">
-                        <Metric
-                          label="EST. receive"
-                          value={
-                            <div className="flex items-center justify-between gap-2 text-lg">
-                              <span>
-                                {Math.max(
-                                  0,
-                                  Number(withdrawAmount || 0) - 5
-                                ).toFixed(2)}
-                              </span>
-                              <span className="inline-flex items-center gap-2 text-sm font-semibold text-white">
-                                <img
-                                  src={usdcLogo}
-                                  alt="USDC"
-                                  className="h-6 w-6 rounded-full bg-slate-900 p-[1px]"
-                                />
-                                USDC
-                              </span>
-                            </div>
-                          }
-                          accent=""
-                        />
-                        <Metric
-                          label="Withdraw fee"
-                          value={
-                            <div className="flex items-center justify-between gap-2 text-lg">
-                              <span>5</span>
-                              <span className="inline-flex items-center gap-2 text-sm font-semibold text-white">
-                                <img
-                                  src={usdcLogo}
-                                  alt="USDC"
-                                  className="h-6 w-6 rounded-full bg-slate-900 p-[1px]"
-                                />
-                                USDC
-                              </span>
-                            </div>
-                          }
-                          accent=""
-                        />
+                      <div className="space-y-3 rounded-xl border border-white/5 bg-slate-900/40 p-4">
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-slate-400">EST. receive</span>
+                          <div className="flex items-center gap-2 text-xl font-semibold text-white">
+                            <span>
+                              {Math.max(0, Number(withdrawAmount || 0) - 5).toFixed(2)}
+                            </span>
+                            <img
+                              src={usdcLogo}
+                              alt="USDC"
+                              className="h-6 w-6 rounded-full bg-slate-900 p-[1px]"
+                            />
+                            <span className="text-base">USDC</span>
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between border-t border-white/5 pt-3 text-sm">
+                          <span className="text-slate-400">Withdraw fee</span>
+                          <div className="flex items-center gap-2 text-base font-semibold text-amber-200">
+                            <span>5</span>
+                            <span className="text-sm">USDC</span>
+                          </div>
+                        </div>
                       </div>
 
-                      <div className="text-xs text-slate-300">
+                      <div className="text-sm text-slate-300">
                         Estimated Arrival: 3 Hours
                       </div>
 
-                      <button className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-amber-400 via-orange-400 to-yellow-300 px-4 py-3 text-sm font-semibold text-slate-950 shadow-xl shadow-amber-400/30 transition hover:-translate-y-0.5 focus:outline-none">
-                        <Zap className="h-4 w-4" />
+                      <button className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-amber-400 via-orange-400 to-yellow-300 px-6 py-4 text-base font-semibold text-slate-950 shadow-xl shadow-amber-400/30 transition hover:-translate-y-0.5 focus:outline-none">
+                        <Zap className="h-5 w-5" />
                         Withdraw
                       </button>
                     </>
                   )}
                 </div>
+
+                {/* Charts side by side */}
+                <div className="grid gap-5 lg:grid-cols-2">
+                  {/* APR History Chart */}
+                  <APRHistoryCard
+                    data={aprHistorySeries}
+                    range={priceRange}
+                    onRangeChange={setPriceRange}
+                  />
+
+                  {/* USDL Price Chart */}
+                  <USDLPriceCard
+                    data={usdlPriceSeries}
+                    range={priceRange}
+                    onRangeChange={setPriceRange}
+                  />
+                </div>
               </div>
 
-              <div className="mt-8 rounded-3xl border border-white/10 bg-slate-950/70 p-5 shadow-inner shadow-cyan-500/15">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold text-white">
-                    Transaction History
-                  </h3>
-                  <span className="text-xs text-slate-400">
-                    Recent on-chain actions
-                  </span>
-                </div>
-                <div className="mt-4 overflow-hidden rounded-2xl border border-white/5">
-                  <div className="grid grid-cols-[1.2fr_1.6fr_1.2fr_1fr] bg-slate-900/60 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-slate-300">
-                    <span>Time</span>
-                    <span>Action</span>
-                    <span className="text-right">Amount</span>
-                    <span className="text-right">Txn</span>
-                  </div>
-                  <div className="divide-y divide-white/5 bg-slate-900/40">
-                    {txPageData.map((tx) => (
-                      <div
-                        key={tx.tx}
-                        className="grid grid-cols-[1.2fr_1.6fr_1.2fr_1fr] items-center px-4 py-3 text-sm text-slate-200 hover:bg-white/5"
+              {/* Transaction History Modal */}
+              {showTxHistory && (
+                <div
+                  className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
+                  onClick={() => setShowTxHistory(false)}
+                >
+                  <div
+                    className="relative w-full max-w-4xl rounded-3xl border border-white/10 bg-slate-950/95 p-6 shadow-2xl shadow-cyan-500/20"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-2xl font-semibold text-white">
+                        Transaction History
+                      </h3>
+                      <button
+                        onClick={() => setShowTxHistory(false)}
+                        className="rounded-full p-2 text-slate-400 transition hover:bg-white/5 hover:text-white focus:outline-none"
                       >
-                        <span className="text-xs text-slate-400">
-                          {tx.time}
-                        </span>
-                        <div className="space-y-1">
-                          <span
-                            className={`inline-flex items-center gap-2 rounded-full px-2 py-1 text-xs font-semibold ${
-                              tx.action === "Deposit"
-                                ? "bg-cyan-400/15 text-cyan-100"
-                                : tx.action === "Withdraw"
-                                ? "bg-amber-400/15 text-amber-200"
-                                : "bg-white/10 text-slate-200"
-                            }`}
+                        <X className="h-6 w-6" />
+                      </button>
+                    </div>
+                    <p className="mt-1 text-sm text-slate-400">
+                      Recent on-chain actions
+                    </p>
+
+                    <div className="mt-6 overflow-hidden rounded-2xl border border-white/5">
+                      <div className="grid grid-cols-[1.2fr_1.6fr_1.2fr_1fr] bg-slate-900/60 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-slate-300">
+                        <span>Time</span>
+                        <span>Action</span>
+                        <span className="text-right">Amount</span>
+                        <span className="text-right">Txn</span>
+                      </div>
+                      <div className="max-h-96 divide-y divide-white/5 overflow-y-auto bg-slate-900/40">
+                        {txPageData.map((tx) => (
+                          <div
+                            key={tx.tx}
+                            className="grid grid-cols-[1.2fr_1.6fr_1.2fr_1fr] items-center px-4 py-3 text-sm text-slate-200 hover:bg-white/5"
                           >
-                            {tx.action}
-                          </span>
-                        </div>
-                        <div className="group relative flex items-center justify-end gap-2 font-mono text-white">
-                          <img
-                            src={
-                              tx.amount.includes("USDC") ? usdcLogo : usdlLogo
-                            }
-                            alt="asset"
-                            className="h-5 w-5 rounded-full bg-slate-900 p-[1px]"
-                          />
-                          <span>{tx.amount}</span>
-                          {(tx.receive || tx.burn) && (
-                            <div className="pointer-events-none absolute right-0 top-full z-20 hidden whitespace-nowrap rounded-lg border border-white/10 bg-slate-900/90 px-3 py-2 text-[11px] text-slate-100 shadow-lg shadow-cyan-500/20 group-hover:block">
-                              {tx.receive && (
-                                <div className="flex items-center gap-2">
-                                  <img
-                                    src={usdlLogo}
-                                    alt="USDL"
-                                    className="h-4 w-4 rounded-full bg-slate-900 p-[1px]"
-                                  />
-                                  <span>Receive {tx.receive}</span>
-                                </div>
-                              )}
-                              {tx.burn && (
-                                <div className="flex items-center gap-2">
-                                  <img
-                                    src={usdlLogo}
-                                    alt="USDL"
-                                    className="h-4 w-4 rounded-full bg-slate-900 p-[1px]"
-                                  />
-                                  <span>Burn {tx.burn}</span>
+                            <span className="text-xs text-slate-400">
+                              {tx.time}
+                            </span>
+                            <div className="space-y-1">
+                              <span
+                                className={`inline-flex items-center gap-2 rounded-full px-2 py-1 text-xs font-semibold ${
+                                  tx.action === "Deposit"
+                                    ? "bg-cyan-400/15 text-cyan-100"
+                                    : tx.action === "Withdraw"
+                                    ? "bg-amber-400/15 text-amber-200"
+                                    : "bg-white/10 text-slate-200"
+                                }`}
+                              >
+                                {tx.action}
+                              </span>
+                            </div>
+                            <div className="group relative flex items-center justify-end gap-2 font-mono text-white">
+                              <img
+                                src={
+                                  tx.amount.includes("USDC")
+                                    ? usdcLogo
+                                    : usdlLogo
+                                }
+                                alt="asset"
+                                className="h-5 w-5 rounded-full bg-slate-900 p-[1px]"
+                              />
+                              <span>{tx.amount}</span>
+                              {(tx.receive || tx.burn) && (
+                                <div className="pointer-events-none absolute right-0 top-full z-20 hidden whitespace-nowrap rounded-lg border border-white/10 bg-slate-900/90 px-3 py-2 text-[11px] text-slate-100 shadow-lg shadow-cyan-500/20 group-hover:block">
+                                  {tx.receive && (
+                                    <div className="flex items-center gap-2">
+                                      <img
+                                        src={usdlLogo}
+                                        alt="USDL"
+                                        className="h-4 w-4 rounded-full bg-slate-900 p-[1px]"
+                                      />
+                                      <span>Receive {tx.receive}</span>
+                                    </div>
+                                  )}
+                                  {tx.burn && (
+                                    <div className="flex items-center gap-2">
+                                      <img
+                                        src={usdlLogo}
+                                        alt="USDL"
+                                        className="h-4 w-4 rounded-full bg-slate-900 p-[1px]"
+                                      />
+                                      <span>Burn {tx.burn}</span>
+                                    </div>
+                                  )}
                                 </div>
                               )}
                             </div>
-                          )}
-                        </div>
-                        <a
-                          href="#"
-                          className="text-right text-xs font-semibold text-cyan-200 hover:underline"
-                        >
-                          {tx.tx}
-                        </a>
+                            <a
+                              href="#"
+                              className="text-right text-xs font-semibold text-cyan-200 hover:underline"
+                            >
+                              {tx.tx}
+                            </a>
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
-                  <div className="flex items-center justify-center gap-2 bg-slate-900/50 px-4 py-2 text-xs text-slate-300">
-                    <button
-                      onClick={() => setTxPage((p) => Math.max(0, p - 1))}
-                      disabled={txPage === 0}
-                      className={`rounded-full px-2 py-1 ${
-                        txPage === 0 ? "opacity-40" : "hover:bg-white/10"
-                      }`}
-                    >
-                      Prev
-                    </button>
-                    <span>
-                      Page {txPage + 1} / {txTotalPages}
-                    </span>
-                    <button
-                      onClick={() =>
-                        setTxPage((p) => Math.min(txTotalPages - 1, p + 1))
-                      }
-                      disabled={txPage >= txTotalPages - 1}
-                      className={`rounded-full px-2 py-1 ${
-                        txPage >= txTotalPages - 1
-                          ? "opacity-40"
-                          : "hover:bg-white/10"
-                      }`}
-                    >
-                      Next
-                    </button>
+                      <div className="flex items-center justify-center gap-2 bg-slate-900/50 px-4 py-3 text-sm text-slate-300">
+                        <button
+                          onClick={() => setTxPage((p) => Math.max(0, p - 1))}
+                          disabled={txPage === 0}
+                          className={`rounded-full px-3 py-1.5 ${
+                            txPage === 0 ? "opacity-40" : "hover:bg-white/10"
+                          }`}
+                        >
+                          Prev
+                        </button>
+                        <span>
+                          Page {txPage + 1} / {txTotalPages}
+                        </span>
+                        <button
+                          onClick={() =>
+                            setTxPage((p) => Math.min(txTotalPages - 1, p + 1))
+                          }
+                          disabled={txPage >= txTotalPages - 1}
+                          className={`rounded-full px-3 py-1.5 ${
+                            txPage >= txTotalPages - 1
+                              ? "opacity-40"
+                              : "hover:bg-white/10"
+                          }`}
+                        >
+                          Next
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
             </section>
           )}
 
@@ -1436,7 +1495,7 @@ function USDLPriceCard({
             d={linePath}
             fill="none"
             stroke="#22d3ee"
-            strokeWidth="1.5"
+            strokeWidth="1"
             strokeLinecap="round"
           />
           {points.length > 0 && (
@@ -1529,6 +1588,212 @@ function buildAreaPath(
   if (!points.length) return "";
   const line = buildLinePath(points);
   return `${line} L ${width} ${height} L 0 ${height} Z`;
+}
+
+function APRHistoryCard({
+  data,
+  range,
+  onRangeChange,
+}: {
+  data: number[];
+  range: "1W" | "1M" | "3M" | "1Y" | "ALL";
+  onRangeChange: (value: "1W" | "1M" | "3M" | "1Y" | "ALL") => void;
+}) {
+  const rangedData = useMemo(() => {
+    const counts: Record<typeof range, number> = {
+      "1W": 7,
+      "1M": 20,
+      "3M": 40,
+      "1Y": data.length,
+      ALL: data.length,
+    };
+    const take = counts[range] ?? data.length;
+    return data.slice(-take);
+  }, [data, range]);
+
+  const svgWidth = 100;
+  const svgHeight = 80;
+  const points = useMemo(
+    () => buildPoints(rangedData, svgWidth, svgHeight),
+    [rangedData, svgWidth, svgHeight]
+  );
+  const linePath = useMemo(() => buildLinePath(points), [points]);
+  const areaPath = useMemo(
+    () => buildAreaPath(points, svgWidth, svgHeight),
+    [points, svgWidth, svgHeight]
+  );
+  const [hoverPoint, setHoverPoint] = useState<{
+    x: number;
+    y: number;
+    value: number;
+    idx: number;
+    xPx?: number;
+    yPx?: number;
+  } | null>(null);
+  const display =
+    hoverPoint ??
+    (points.length
+      ? {
+          x: points[points.length - 1].x,
+          y: points[points.length - 1].y,
+          value: rangedData[rangedData.length - 1],
+          idx: points.length - 1,
+        }
+      : { x: 0, y: 0, value: 0, idx: 0 });
+  const svgRef = useRef<SVGSVGElement | null>(null);
+
+  const handleHover = (event: React.MouseEvent<SVGSVGElement, MouseEvent>) => {
+    if (!svgRef.current || !points.length) return;
+    const rect = svgRef.current.getBoundingClientRect();
+    const relX = ((event.clientX - rect.left) / rect.width) * svgWidth;
+    const clampedX = Math.max(0, Math.min(svgWidth, relX));
+
+    let idx = points.findIndex((p) => p.x >= clampedX);
+    if (idx === -1) idx = points.length - 1;
+    const prevIdx = Math.max(0, idx - 1);
+    const p0 = points[prevIdx];
+    const p1 = points[idx];
+    const v0 = rangedData[prevIdx] ?? rangedData[rangedData.length - 1] ?? 0;
+    const v1 = rangedData[idx] ?? v0;
+    const span = p1.x - p0.x || 1;
+    const t = Math.max(0, Math.min(1, (clampedX - p0.x) / span));
+    const interpY = p0.y + (p1.y - p0.y) * t;
+    const interpV = v0 + (v1 - v0) * t;
+
+    const parentRect = svgRef.current.parentElement?.getBoundingClientRect();
+    const xPx =
+      parentRect && rect
+        ? rect.left - parentRect.left + (clampedX / svgWidth) * rect.width
+        : undefined;
+    const yPx =
+      parentRect && rect
+        ? rect.top - parentRect.top + (interpY / svgHeight) * rect.height
+        : undefined;
+
+    setHoverPoint({
+      x: clampedX,
+      y: interpY,
+      value: interpV,
+      idx,
+      xPx,
+      yPx,
+    });
+  };
+
+  const handleLeave = () => {
+    setHoverPoint(null);
+  };
+
+  return (
+    <div className="space-y-4 rounded-2xl border border-white/10 bg-slate-950/60 p-5 shadow-inner shadow-cyan-500/15 opacity-90">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <TrendingUp className="h-5 w-5 text-yellow-300" />
+          <p className="text-sm font-semibold text-white">APR History</p>
+          <div className="flex items-center gap-2 text-[11px]">
+            {["1W", "1M", "3M", "1Y", "ALL"].map((r) => (
+              <button
+                key={r}
+                onClick={() => onRangeChange(r as typeof range)}
+                className={`rounded-full px-2 py-1 ${
+                  range === r
+                    ? "bg-yellow-400/20 text-yellow-100"
+                    : "bg-white/5 text-slate-300"
+                }`}
+              >
+                {r}
+              </button>
+            ))}
+          </div>
+        </div>
+        <span className="text-sm font-semibold text-yellow-100">
+          {display.value.toFixed(1)}%
+        </span>
+      </div>
+      <div className="relative overflow-hidden rounded-xl border border-white/10 bg-gradient-to-b from-slate-900 to-slate-950 p-0">
+        <svg
+          ref={svgRef}
+          viewBox={`0 0 ${svgWidth} ${svgHeight}`}
+          preserveAspectRatio="none"
+          className="block h-48 w-full"
+          onMouseMove={handleHover}
+          onMouseLeave={handleLeave}
+        >
+          <defs>
+            <linearGradient id="aprArea" x1="0" x2="0" y1="0" y2="1">
+              <stop offset="0%" stopColor="#fbbf24" stopOpacity="0.25" />
+              <stop offset="100%" stopColor="#fbbf24" stopOpacity="0" />
+            </linearGradient>
+          </defs>
+          <path d={areaPath} fill="url(#aprArea)" />
+          <path
+            d={linePath}
+            fill="none"
+            stroke="#fbbf24"
+            strokeWidth="1"
+            strokeLinecap="round"
+          />
+          {points.length > 0 && (
+            <>
+              <line
+                x1={display.x}
+                x2={display.x}
+                y1={0}
+                y2={svgHeight}
+                stroke="#fcd34d"
+                strokeWidth="0.4"
+                strokeDasharray="2 2"
+                opacity={0.7}
+              />
+              <circle
+                cx={display.x}
+                cy={display.y}
+                r={1.8}
+                fill="#fbbf24"
+                stroke="#f59e0b"
+                strokeWidth="0.6"
+              />
+            </>
+          )}
+          <rect
+            x={0}
+            y={0}
+            width={svgWidth}
+            height={svgHeight}
+            fill="transparent"
+          />
+        </svg>
+        {points.length > 0 && (
+          <>
+            <div className="pointer-events-none absolute right-4 top-4 rounded-lg bg-slate-900/80 px-3 py-2 text-xs text-white shadow-lg shadow-yellow-500/20">
+              <div className="flex items-center gap-2">
+                <span className="h-2 w-2 rounded-full bg-yellow-300" />
+                APR: {display.value.toFixed(1)}%
+              </div>
+              <div className="mt-1 text-[10px] text-slate-400">
+                Point {display.idx + 1}/{points.length}
+              </div>
+            </div>
+            {hoverPoint && (
+              <div
+                className="pointer-events-none absolute rounded-md bg-slate-900/90 px-2 py-1 text-[10px] text-white shadow-md shadow-yellow-500/20"
+                style={{
+                  left: (hoverPoint.xPx ?? 0) + 10,
+                  top: (hoverPoint.yPx ?? 0) + 10,
+                }}
+              >
+                APR: {display.value.toFixed(1)}%
+              </div>
+            )}
+          </>
+        )}
+      </div>
+      <div className="flex items-center justify-between text-[11px] text-slate-400">
+        <span>Historical performance</span>
+        <span className="text-yellow-200">Average: 60.5%</span>
+      </div>
+    </div>
+  );
 }
 
 function formatDuration(ms: number) {
