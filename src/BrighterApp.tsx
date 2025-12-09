@@ -323,7 +323,7 @@ export default function BrighterApp() {
         background: 'repeating-linear-gradient(0deg, rgba(99, 102, 241, 0.15), rgba(99, 102, 241, 0.15) 1px, transparent 1px, transparent 2px)'
       }} />
 
-      <div className="relative mx-auto max-w-[800px] px-6 py-10 pb-28 md:px-10 md:pb-10">
+      <div className="relative mx-auto max-w-7xl px-6 py-10 pb-28 md:px-10 md:pb-10">
         <header className="flex items-center justify-between gap-4 border border-white/10 bg-[#0a0a1f] p-4">
           <div className="flex items-center gap-3">
             <div className="p-2">
@@ -553,57 +553,64 @@ export default function BrighterApp() {
 
           {activeTab === "Deposit" && (
             <section className="relative overflow-hidden border border-white/10 bg-[#0a0a1f] p-6">
-              <div>
-                <h2 className="text-xl font-bold text-white uppercase tracking-wider md:text-2xl border-l-4 border-indigo-500 pl-4">
-                  DEPOSIT_USDC & GET <br/>
-                  <span className="inline-flex items-baseline gap-2">
-                    <span className="text-4xl font-bold text-indigo-300 md:text-5xl">
-                      {depositPercent}%
-                    </span>
-                    <span className="text-xl text-indigo-300 md:text-2xl">LLP_ALLOCATION</span>
-                  </span>
-                </h2>
-              </div>
-
-              <div className="mt-8 grid gap-5 md:grid-cols-3">
-                <HoverAmountCard
-                  label="Total deposited"
-                  amount={totalDeposited}
-                />
-                <HoverAmountCard
-                  label="Your deposited"
-                  amount={yourDeposited}
-                />
-                <div
-                  className="relative border border-white/10 bg-slate-800 px-4 py-3"
-                  onMouseEnter={() => setAprHover(true)}
-                  onMouseLeave={() => setAprHover(false)}
-                >
-                  <div className="absolute -top-3 right-3 border border-indigo-500 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 px-3 py-1 text-[10px] font-bold uppercase tracking-wide animate-gradient bg-[length:200%_200%]">
-                    <span className="bg-gradient-to-r from-indigo-100 via-purple-100 to-pink-100 bg-clip-text text-transparent animate-gradient bg-[length:200%_200%]">
-                       ̶2̶5̶%̶ 100% LLP_ALLOCATION
-                    </span>
+              {/* Two-column grid layout */}
+              <div className="grid gap-6 lg:grid-cols-2">
+                {/* Left Column: Header, Stats, Chart */}
+                <div className="space-y-6">
+                  <div>
+                    <h2 className="text-xl font-bold text-white uppercase tracking-wider md:text-2xl border-l-4 border-indigo-500 pl-4">
+                      DEPOSIT_USDC & GET <br/>
+                      <span className="inline-flex items-baseline gap-2">
+                        <span className="text-4xl font-bold text-indigo-300 md:text-5xl">
+                          {depositPercent}%
+                        </span>
+                        <span className="text-xl text-indigo-300 md:text-2xl">LLP_ALLOCATION</span>
+                      </span>
+                    </h2>
                   </div>
-                  <p className="text-xs uppercase tracking-[0.2em] text-gray-500 font-mono">
-                    {'>'} APR
-                  </p>
-                  <p className="text-2xl font-semibold text-white font-mono">
-                    {headlineApr}
-                  </p>
-                  {aprHover && (
-                    <div className="absolute right-0 top-16 z-20 w-64 border border-white/20 bg-[#0a0a1f] p-3 text-xs text-white font-mono">
-                      <div className="flex items-center justify-between">
-                        <span>LLP_YIELD</span>
-                        <span className="text-gray-400">35%</span>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
 
-              {/* Main Deposit/Withdraw Section - Enhanced */}
-              <div className="mt-6 space-y-6">
-                <div className="space-y-6 border border-white/10 bg-[#0a0a1f] p-6">
+                  <div className="grid gap-5 md:grid-cols-3">
+                    <HoverAmountCard
+                      label="Total deposited"
+                      amount={totalDeposited}
+                    />
+                    <HoverAmountCard
+                      label="Total staked"
+                      amount={yourDeposited}
+                    />
+                    <div
+                      className="relative border border-white/10 bg-slate-800 px-4 py-3"
+                      onMouseEnter={() => setAprHover(true)}
+                      onMouseLeave={() => setAprHover(false)}
+                    >
+                      <p className="text-xs uppercase tracking-[0.2em] text-gray-500 font-mono">
+                        APR
+                      </p>
+                      <p className="text-2xl font-semibold text-white font-mono">
+                        {headlineApr}
+                      </p>
+                      {aprHover && (
+                        <div className="absolute right-0 top-16 z-20 w-64 border border-white/20 bg-[#0a0a1f] p-3 text-xs text-white font-mono">
+                          <div className="flex items-center justify-between">
+                            <span>LLP_YIELD</span>
+                            <span className="text-gray-400">35%</span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  {/* APR History Chart */}
+                  <APRHistoryCard
+                    data={aprHistorySeries}
+                    range={priceRange}
+                    onRangeChange={setPriceRange}
+                  />
+                </div>
+
+                {/* Right Column */}
+                <div>
+                  {/* Main Deposit/Withdraw Section - Enhanced */}
+                  <div className="space-y-6 border border-white/10 bg-[#0a0a1f] p-6">
                   <div className="flex items-center justify-between">
                     <div className="inline-flex items-center gap-2 border border-white/10 bg-[#0a0a1f] p-1 text-sm text-white font-mono">
                       {["deposit", "withdraw"].map((mode) => {
@@ -625,12 +632,6 @@ export default function BrighterApp() {
                         );
                       })}
                     </div>
-                    <button
-                      onClick={() => setShowTxHistory(true)}
-                      className="flex items-center gap-2 border border-green-500/50 bg-green-500/10 px-3 py-1.5 text-xs font-bold text-green-300 uppercase tracking-wider transition hover:bg-green-500/20 hover:border-green-400 focus:outline-none"
-                    >
-                      TX_HISTORY_LOG
-                    </button>
                   </div>
 
                   {depositMode === "deposit" ? (
@@ -702,28 +703,25 @@ export default function BrighterApp() {
                         </div>
                       </div>
 
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between text-sm text-white font-mono">
-                          <label className="font-medium uppercase tracking-wider">{'>'} Receive</label>
-                        </div>
-                        <div className="relative group">
-                          <div className="w-full border border-white/20 bg-transparent px-4 py-5 text-2xl font-semibold text-white outline-none font-mono cursor-not-allowed">
-                            {(Number(zapAmount || 0) / 1.01).toFixed(2)}
+                      <div className="border border-white/20 bg-black/40 p-4">
+                        <h3 className="text-sm font-medium text-white uppercase tracking-wider font-mono mb-3">
+                          Simulation
+                        </h3>
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-gray-400">You will receive</span>
+                            <span className="text-cyan-400 font-mono font-semibold">
+                              {(Number(zapAmount || 0) / 1.01).toFixed(0)} USDL
+                            </span>
                           </div>
-                          <div className="pointer-events-none absolute inset-y-0 right-4 flex items-center gap-2 text-base font-semibold text-white uppercase font-mono">
-                            <img
-                              src={usdlLogo}
-                              alt="USDL"
-                              className="h-9 w-9 opacity-70 rounded-full"
-                            />
-                            USDL
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-gray-400">Performance fee</span>
+                            <span className="text-gray-300 font-mono">10%</span>
                           </div>
-                          <div className="absolute left-0 top-full mt-2 hidden group-hover:block w-auto whitespace-nowrap border border-white/20 bg-[#0a0a1f] px-3 py-2 text-xs text-white font-mono z-20">
-                            USDL == YIELD_BEARING_STABLECOIN
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-gray-400">Withdrawal time</span>
+                            <span className="text-gray-300 font-mono">T+1</span>
                           </div>
-                        </div>
-                        <div className="text-right text-xs text-gray-500">
-                          Performance fee 10%
                         </div>
                       </div>
 
@@ -824,32 +822,22 @@ export default function BrighterApp() {
                         </div>
                       </div>
 
-                      <div className="space-y-3 border border-white/10 bg-[#0a0a1f] p-4">
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="text-gray-500 uppercase tracking-wider font-mono">{'>'} EST_RECEIVE</span>
-                          <div className="flex items-center gap-2 text-xl font-semibold text-white font-mono">
-                            <span>
-                              {Math.max(0, Number(withdrawAmount || 0) - 5).toFixed(2)}
+                      <div className="border border-white/20 bg-black/40 p-4">
+                        <h3 className="text-sm font-medium text-white uppercase tracking-wider font-mono mb-3">
+                          Simulation
+                        </h3>
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-gray-400">You will receive</span>
+                            <span className="text-cyan-400 font-mono font-semibold">
+                              {Number(withdrawAmount || 0).toFixed(0)} USDC
                             </span>
-                            <img
-                              src={usdcLogo}
-                              alt="USDC"
-                              className="h-6 w-6 opacity-70 rounded-full"
-                            />
-                            <span className="text-base">USDC</span>
+                          </div>
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-gray-400">Withdrawal time</span>
+                            <span className="text-gray-300 font-mono">T+1</span>
                           </div>
                         </div>
-                        <div className="flex items-center justify-between border-t border-white/10 pt-3 text-sm">
-                          <span className="text-gray-500 uppercase tracking-wider font-mono">{'>'} FEE</span>
-                          <div className="flex items-center gap-2 text-base font-semibold text-gray-400 font-mono">
-                            <span>5</span>
-                            <span className="text-sm">USDC</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="text-sm text-amber-300/80 font-mono uppercase tracking-wider bg-amber-500/10 border border-amber-500/20 p-3 rounded-md">
-                        {'>'} Withdrawals are available to claim after a T+1 period.
                       </div>
 
                       <button className="flex w-full items-center justify-center gap-2 border border-gray-500/50 bg-gray-500/10 px-6 py-4 text-base font-bold text-gray-300 uppercase tracking-[0.2em] transition hover:bg-gray-500/20 hover:border-gray-400 focus:outline-none font-mono">
@@ -858,12 +846,23 @@ export default function BrighterApp() {
                       </button>
                     </>
                   )}
+                  </div>
                 </div>
+              </div>
 
-                <div className="space-y-4">
+              {/* Your Positions - outside the grid, full width */}
+              <div className="mt-6 space-y-4">
+                <div className="flex items-center justify-between">
                   <h3 className="text-lg font-semibold text-white uppercase tracking-wider font-mono border-l-4 border-cyan-400 pl-3">
                     {'>'} Your Positions
                   </h3>
+                  <button
+                    onClick={() => setShowTxHistory(true)}
+                    className="flex items-center gap-2 border border-green-500/50 bg-green-500/10 px-3 py-1.5 text-xs font-bold text-green-300 uppercase tracking-wider transition hover:bg-green-500/20 hover:border-green-400 focus:outline-none"
+                  >
+                    TX_HISTORY_LOG
+                  </button>
+                </div>
 
                   <div className="border border-white/10 bg-slate-800 p-5 rounded-lg">
                     <h3 className="text-base font-semibold text-white uppercase tracking-wider font-mono mb-4">
@@ -920,83 +919,83 @@ export default function BrighterApp() {
                             </div>
                           </div>
                           {pos.type === 'Staked' && pos.unlockAt && (
-                            <div className="text-xs text-slate-400">
-                              Unlock at: {new Date(pos.unlockAt).toLocaleString()}
+                            <div className="flex items-center gap-3">
+                              <div className="text-xs text-slate-400">
+                                Unlock at: {new Date(pos.unlockAt).toLocaleString()}
+                              </div>
+                              <button
+                                disabled={nowTs < pos.unlockAt}
+                                className={`px-4 py-2 text-xs font-semibold transition ${
+                                  nowTs >= pos.unlockAt
+                                    ? "bg-green-500/20 text-green-300 border border-green-500/50 hover:bg-green-500/30 cursor-pointer"
+                                    : "cursor-not-allowed bg-white/5 text-slate-500 border border-white/10"
+                                }`}
+                              >
+                                Claim
+                              </button>
+                            </div>
+                          )}
+                          {pos.type === 'Deposit' && (
+                            <div className="text-sm font-semibold text-green-400 font-mono">
+                              Earning {headlineApr}
                             </div>
                           )}
                         </div>
-                        <div className="mt-4 pt-4 border-t border-white/20 grid grid-cols-3 gap-4">
-                          <div>
-                            <p className="text-xs text-slate-400 uppercase tracking-wider">Earned (USD)</p>
-                            <p className="text-lg font-mono text-white">${pos.earnedUSD.toFixed(2)}</p>
+                        {pos.type === 'Staked' && (
+                          <div className="mt-4 pt-4 border-t border-white/20 grid grid-cols-3 gap-4">
+                            <div>
+                              <p className="text-xs text-slate-400 uppercase tracking-wider">Earned (USD)</p>
+                              <p className="text-lg font-mono text-white">${pos.earnedUSD.toFixed(2)}</p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-slate-400 uppercase tracking-wider">Earned (Lighter)</p>
+                              <p className="text-lg font-mono text-white">{pos.earnedLighter.toLocaleString()} pt</p>
+                            </div>
+                            <div>
+                              <p className="text-xs text-slate-400 uppercase tracking-wider">Earned (Brighter)</p>
+                              <p className="text-lg font-mono text-white">{pos.earnedBrighter.toLocaleString()} pt</p>
+                            </div>
                           </div>
-                          <div>
-                            <p className="text-xs text-slate-400 uppercase tracking-wider">Earned (Lighter)</p>
-                            <p className="text-lg font-mono text-white">{pos.earnedLighter.toLocaleString()} pt</p>
+                        )}
+                        {pos.type === 'Deposit' && pendingWithdrawals.length > 0 && (
+                          <div className="mt-4 pt-4 border-t border-white/20 space-y-3">
+                            <h4 className="text-sm font-semibold text-white uppercase tracking-wider font-mono">
+                              Pending Withdrawals
+                            </h4>
+                            {pendingWithdrawals.map((withdrawal) => {
+                              const isClaimable = nowTs >= withdrawal.claimableAt;
+                              return (
+                                <div key={withdrawal.id} className="flex items-center justify-between border border-white/10 bg-slate-900 p-3 rounded">
+                                  <div className="flex items-center gap-3">
+                                    <span className="text-sm font-bold uppercase px-2 py-1 border text-orange-300 border-orange-300/50 bg-orange-500/10">
+                                      Pending Withdraw
+                                    </span>
+                                    <div className="font-mono text-white text-lg">
+                                      {withdrawal.amount.toLocaleString()} USDL
+                                    </div>
+                                  </div>
+                                  <button
+                                    disabled={!isClaimable}
+                                    className={`px-4 py-2 text-xs font-semibold transition ${
+                                      isClaimable
+                                        ? "bg-indigo-500/20 text-indigo-300 border border-indigo-500/50 hover:bg-indigo-500/30"
+                                        : "cursor-not-allowed bg-white/5 text-slate-500 border border-white/10"
+                                    }`}
+                                  >
+                                    {isClaimable
+                                      ? "Claim"
+                                      : `Claimable at ${new Date(withdrawal.claimableAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+                                    }
+                                  </button>
+                                </div>
+                              );
+                            })}
                           </div>
-                          <div>
-                            <p className="text-xs text-slate-400 uppercase tracking-wider">Earned (Brighter)</p>
-                            <p className="text-lg font-mono text-white">{pos.earnedBrighter.toLocaleString()} pt</p>
-                          </div>
-                        </div>
+                        )}
                       </div>
                     ))}
                   </div>
-
-                  {yourPositionsTab === "Deposit" && pendingWithdrawals.length > 0 && (
-                    <div className="space-y-3">
-                      <h4 className="text-sm font-semibold text-white uppercase tracking-wider font-mono pt-4 border-t border-white/10">
-                        {'>'} Pending Withdrawals
-                      </h4>
-                      {pendingWithdrawals.map((withdrawal) => {
-                        const isClaimable = nowTs >= withdrawal.claimableAt;
-                        return (
-                          <div key={withdrawal.id} className="flex items-center justify-between border border-white/10 bg-slate-800 p-4 rounded-lg">
-                            <div className="flex items-center gap-3">
-                              <span className="text-sm font-bold uppercase px-2 py-1 border text-orange-300 border-orange-300/50 bg-orange-500/10">
-                                Pending Withdraw
-                              </span>
-                              <div className="font-mono text-white text-lg">
-                                {withdrawal.amount.toLocaleString()} USDL
-                              </div>
-                            </div>
-                            <button
-                              disabled={!isClaimable}
-                              className={`px-4 py-2 text-xs font-semibold transition ${
-                                isClaimable
-                                  ? "bg-indigo-500/20 text-indigo-300 border border-indigo-500/50 hover:bg-indigo-500/30"
-                                  : "cursor-not-allowed bg-white/5 text-slate-500 border border-white/10"
-                              }`}
-                            >
-                              {isClaimable
-                                ? "Claim"
-                                : `Claimable at ${new Date(withdrawal.claimableAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
-                              }
-                            </button>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
                 </div>
-
-                {/* Charts side by side */}
-                <div className="grid gap-5 lg:grid-cols-2">
-                  {/* APR History Chart */}
-                  <APRHistoryCard
-                    data={aprHistorySeries}
-                    range={priceRange}
-                    onRangeChange={setPriceRange}
-                  />
-
-                  {/* USDL Price Chart */}
-                  <USDLPriceCard
-                    data={usdlPriceSeries}
-                    range={priceRange}
-                    onRangeChange={setPriceRange}
-                  />
-                </div>
-              </div>
 
               {/* Transaction History Modal */}
               {showTxHistory && (
@@ -1576,7 +1575,7 @@ function HoverAmountCard({ label, amount }: { label: string; amount: string }) {
       onMouseLeave={() => setHover(false)}
     >
       <p className="text-xs uppercase tracking-[0.2em] text-gray-500 font-mono">
-        {'>'} {label}
+        {label}
       </p>
       <p className="text-2xl font-semibold text-white font-mono">{amount}</p>
       {hover && (
