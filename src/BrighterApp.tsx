@@ -599,9 +599,9 @@ export default function BrighterApp() {
                       )}
                     </div>
                   </div>
-                  {/* APR History Chart */}
+                  {/* NAV Chart */}
                   <APRHistoryCard
-                    data={aprHistorySeries}
+                    data={usdlPriceSeries}
                     range={priceRange}
                     onRangeChange={setPriceRange}
                   />
@@ -1925,115 +1925,118 @@ function APRHistoryCard({
     setHoverPoint(null);
   };
 
+  const minValue = Math.min(...rangedData);
+  const maxValue = Math.max(...rangedData);
+  const yTicks = [
+    maxValue,
+    maxValue - (maxValue - minValue) * 0.25,
+    maxValue - (maxValue - minValue) * 0.5,
+    maxValue - (maxValue - minValue) * 0.75,
+    minValue
+  ];
+
+  const [showDropdown, setShowDropdown] = useState(false);
+
+  const rangeLabels: Record<string, string> = {
+    "1W": "1W",
+    "1M": "1M",
+    "3M": "3M",
+    "1Y": "1Y",
+    "ALL": "All-time"
+  };
+
   return (
-    <div className="space-y-4 border border-white/10 bg-[#0a0a1f] p-5">
-      <div className="flex flex-col gap-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <TrendingUp className="h-5 w-5 text-gray-400" />
-            <p className="text-sm font-semibold text-white uppercase tracking-wider font-mono">{'>'} APR_HISTORY</p>
-          </div>
-          <span className="text-sm font-semibold text-white font-mono">
-            {display.value.toFixed(1)}%
-          </span>
+    <div className="space-y-4 border border-white/10 bg-black p-5">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <button className="px-3 py-1 text-sm font-medium text-white border-b-2 border-blue-500">
+            NAV
+          </button>
         </div>
-        <div className="flex items-center gap-2 text-[11px]">
-          {["1W", "1M", "3M", "1Y", "ALL"].map((r) => (
-            <button
-              key={r}
-              onClick={() => onRangeChange(r as typeof range)}
-              className={`border border-white/20 px-2 py-1 font-mono uppercase ${
-                range === r
-                  ? "bg-white/10 text-white"
-                  : "bg-[#0a0a1f] text-gray-500 hover:text-white"
-              }`}
-            >
-              {r}
-            </button>
+        <div className="relative flex items-center gap-2 text-xs">
+          <button
+            onClick={() => setShowDropdown(!showDropdown)}
+            className="px-3 py-1 text-gray-400 hover:text-white flex items-center gap-1"
+          >
+            {rangeLabels[range]} ▾
+          </button>
+          {showDropdown && (
+            <div className="absolute top-full right-0 mt-1 bg-[#1a1a1a] border border-white/10 rounded shadow-lg z-10 min-w-[100px]">
+              {["1W", "1M", "ALL"].map((r) => (
+                <button
+                  key={r}
+                  onClick={() => {
+                    onRangeChange(r as typeof range);
+                    setShowDropdown(false);
+                  }}
+                  className={`block w-full text-left px-4 py-2 text-sm hover:bg-white/5 ${
+                    range === r ? "text-green-400 bg-white/5" : "text-gray-400"
+                  }`}
+                >
+                  {rangeLabels[r]}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+      <div className="relative bg-black pl-12 pr-4 pt-2 pb-8" style={{ height: '320px' }}>
+        {/* Y-axis labels */}
+        <div className="absolute left-0 top-2 bottom-8 flex flex-col justify-between text-xs text-gray-500">
+          {yTicks.map((tick, i) => (
+            <div key={i} className="text-right pr-2" style={{ transform: 'translateY(-50%)' }}>
+              {tick.toFixed(3)}
+            </div>
           ))}
         </div>
-      </div>
-      <div className="relative overflow-hidden border border-white/10 bg-[#0a0a1f] p-0">
-        <svg
-          ref={svgRef}
-          viewBox={`0 0 ${svgWidth} ${svgHeight}`}
-          preserveAspectRatio="none"
-          className="block h-48 w-full"
-          onMouseMove={handleHover}
-          onMouseLeave={handleLeave}
-        >
-          <defs>
-            <linearGradient id="aprArea" x1="0" x2="0" y1="0" y2="1">
-              <stop offset="0%" stopColor="#fbbf24" stopOpacity="0.25" />
-              <stop offset="100%" stopColor="#fbbf24" stopOpacity="0" />
-            </linearGradient>
-          </defs>
-          <path d={areaPath} fill="url(#aprArea)" />
-          <path
-            d={linePath}
-            fill="none"
-            stroke="#fbbf24"
-            strokeWidth="0.5"
-            strokeLinecap="round"
-          />
-          {points.length > 0 && (
-            <>
+
+        {/* Chart area */}
+        <div className="relative h-full">
+          <svg
+            ref={svgRef}
+            viewBox={`0 0 ${svgWidth} ${svgHeight}`}
+            preserveAspectRatio="none"
+            className="block h-full w-full"
+            onMouseMove={handleHover}
+            onMouseLeave={handleLeave}
+          >
+            <defs>
+              <linearGradient id="navArea" x1="0" x2="0" y1="0" y2="1">
+                <stop offset="0%" stopColor="#10b981" stopOpacity="0.3" />
+                <stop offset="100%" stopColor="#10b981" stopOpacity="0" />
+              </linearGradient>
+            </defs>
+
+            {/* Grid lines */}
+            {[0, 20, 40, 60, 80].map((y) => (
               <line
-                x1={display.x}
-                x2={display.x}
-                y1={0}
-                y2={svgHeight}
-                stroke="#fcd34d"
-                strokeWidth="0.4"
-                strokeDasharray="2 2"
-                opacity={0.7}
+                key={y}
+                x1={0}
+                x2={svgWidth}
+                y1={y}
+                y2={y}
+                stroke="#1f2937"
+                strokeWidth="0.2"
               />
-              <circle
-                cx={display.x}
-                cy={display.y}
-                r={1.8}
-                fill="#fbbf24"
-                stroke="#f59e0b"
-                strokeWidth="0.6"
-              />
-            </>
-          )}
-          <rect
-            x={0}
-            y={0}
-            width={svgWidth}
-            height={svgHeight}
-            fill="transparent"
-          />
-        </svg>
-        {points.length > 0 && (
-          <>
-            <div className="pointer-events-none absolute right-4 top-4 border border-white/20 bg-[#0a0a1f] px-3 py-2 text-xs text-white font-mono">
-              <div className="flex items-center gap-2">
-                <span className="h-2 w-2 bg-indigo-400 border border-indigo-300" />
-                APR: {display.value.toFixed(1)}%
-              </div>
-              <div className="mt-1 text-[10px] text-gray-500 uppercase">
-                {'>'} POINT {display.idx + 1}/{points.length}
-              </div>
-            </div>
-            {hoverPoint && (
-              <div
-                className="pointer-events-none absolute border border-white/20 bg-[#0a0a1f] px-2 py-1 text-[10px] text-white font-mono"
-                style={{
-                  left: (hoverPoint.xPx ?? 0) + 10,
-                  top: (hoverPoint.yPx ?? 0) + 10,
-                }}
-              >
-                APR: {display.value.toFixed(1)}%
-              </div>
-            )}
-          </>
-        )}
-      </div>
-      <div className="flex items-center justify-between text-[11px] text-gray-500 font-mono uppercase">
-        <span>{'>'} HISTORICAL_PERFORMANCE</span>
-        <span className="text-white">AVERAGE: 60.5%</span>
+            ))}
+
+            <path d={areaPath} fill="url(#navArea)" />
+            <path
+              d={linePath}
+              fill="none"
+              stroke="#10b981"
+              strokeWidth="0.6"
+              strokeLinecap="round"
+            />
+          </svg>
+
+          {/* X-axis labels */}
+          <div className="absolute bottom-0 left-0 right-0 flex justify-between text-xs text-gray-500 pt-2">
+            {['2/1', '3/1', '4/1', '5/1', '6/1', '7/1', '8/1', '9/1', '10/1', '11/1', '12/1'].map((label, i) => (
+              <span key={i}>{label}</span>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );
