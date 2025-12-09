@@ -8,7 +8,7 @@ import {
   ChevronDown,
   X,
 } from "lucide-react";
-import brighterLogo from "./Assets/Brighter logo 裁切.png";
+import brighterLogo from "./Assets/Brighter logo.png";
 import llpLogo from "./Assets/LLP_logo.jpg";
 import usdcLogo from "./Assets/USDC_logo.png";
 import usdlLogo from "./Assets/usdl.png";
