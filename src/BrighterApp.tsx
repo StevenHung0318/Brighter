@@ -870,26 +870,26 @@ export default function BrighterApp() {
                   ) : depositMode === "stake" ? (
                     <>
                       {/* USDL Amount Input */}
-                      <div className="space-y-2">
-                        <label className="text-xs text-gray-400 font-mono uppercase">USDL Amount</label>
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between text-sm text-white font-mono">
+                          <label className="font-medium uppercase tracking-wider">{'>'} STAKE_AMOUNT</label>
+                          <span className="text-gray-500 text-xs">Balance: 5,600 USDL</span>
+                        </div>
                         <div className="relative">
                           <input
                             value={stakeAmount}
                             onChange={(e) => setStakeAmount(e.target.value)}
-                            className="w-full border border-white/20 bg-black/40 px-4 py-3 pr-20 text-lg font-mono text-white focus:border-cyan-400/60 focus:outline-none"
-                            placeholder="0"
+                            className="w-full border border-white/20 bg-slate-800 px-5 py-5 pr-32 text-3xl font-mono text-white focus:border-white/40 focus:outline-none"
+                            placeholder="0.0"
                           />
-                          <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center gap-2">
+                          <div className="pointer-events-none absolute inset-y-0 right-4 flex items-center gap-2 text-base font-semibold text-white uppercase font-mono">
                             <img
                               src={usdlLogo}
                               alt="USDL"
-                              className="h-6 w-6 rounded-full"
+                              className="h-9 w-9 opacity-70 rounded-full"
                             />
-                            <span className="text-sm font-medium text-white font-mono">USDL</span>
+                            USDL
                           </div>
-                        </div>
-                        <div className="text-xs text-gray-500 font-mono">
-                          Balance: 5,600 USDL
                         </div>
                       </div>
 
@@ -939,8 +939,9 @@ export default function BrighterApp() {
                       </div>
 
                       {/* Stake Button */}
-                      <button className="w-full border-2 border-cyan-400 bg-cyan-400/10 px-6 py-3 text-sm font-bold uppercase tracking-[0.2em] text-cyan-400 transition hover:bg-cyan-400/20 font-mono">
-                        Stake USDL
+                      <button className="flex w-full items-center justify-center gap-2 bg-indigo-500 px-6 py-4 text-base font-bold text-white uppercase tracking-tight transition hover:bg-indigo-600 focus:outline-none font-mono">
+                        <Zap className="h-5 w-5" />
+                        STAKE USDL
                       </button>
                     </>
                   ) : null}
