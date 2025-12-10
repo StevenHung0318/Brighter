@@ -138,6 +138,19 @@ export default function BrighterApp() {
     },
   ], []);
 
+  const pendingDeposits = useMemo(() => [
+    {
+      id: 'dep-1',
+      amount: 1000,
+      claimableAt: Date.now() + 2 * 3600 * 1000, // 2 hours from now
+    },
+    {
+      id: 'dep-2',
+      amount: 750,
+      claimableAt: Date.now() - 1 * 3600 * 1000, // 1 hour ago (claimable)
+    },
+  ], []);
+
   const pendingWithdrawals = useMemo(() => [
     {
       id: 'wd-1',
@@ -1020,40 +1033,79 @@ export default function BrighterApp() {
                             </div>
                           )}
                         </div>
-                        {pos.type === 'Deposit' && pendingWithdrawals.length > 0 && (
-                          <div className="mt-4 pt-4 border-t border-white/20 space-y-3">
-                            <h4 className="text-sm font-semibold text-white uppercase tracking-wider font-mono">
-                              Pending Withdrawals
-                            </h4>
-                            {pendingWithdrawals.map((withdrawal) => {
-                              const isClaimable = nowTs >= withdrawal.claimableAt;
-                              return (
-                                <div key={withdrawal.id} className="flex items-center justify-between border border-white/10 bg-slate-900 p-3 rounded">
-                                  <div className="flex items-center gap-3">
-                                    <span className="text-sm font-bold uppercase px-2 py-1 border text-orange-300 border-orange-300/50 bg-orange-500/10">
-                                      Pending Withdraw
-                                    </span>
-                                    <div className="font-mono text-white text-lg">
-                                      {withdrawal.amount.toLocaleString()} USDL
+                        {pos.type === 'Deposit' && (
+                          <>
+                            {pendingDeposits.length > 0 && (
+                              <div className="mt-4 pt-4 border-t border-white/20 space-y-3">
+                                <h4 className="text-sm font-semibold text-white uppercase tracking-wider font-mono">
+                                  Pending Deposits
+                                </h4>
+                                {pendingDeposits.map((deposit) => {
+                                  const isClaimable = nowTs >= deposit.claimableAt;
+                                  return (
+                                    <div key={deposit.id} className="flex items-center justify-between border border-white/10 bg-slate-900 p-3 rounded">
+                                      <div className="flex items-center gap-3">
+                                        <span className="text-sm font-bold uppercase px-2 py-1 border text-cyan-300 border-cyan-300/50 bg-cyan-500/10">
+                                          Pending Deposit
+                                        </span>
+                                        <div className="font-mono text-white text-lg">
+                                          {deposit.amount.toLocaleString()} USDC
+                                        </div>
+                                      </div>
+                                      <button
+                                        disabled={!isClaimable}
+                                        className={`px-4 py-2 text-xs font-semibold transition ${
+                                          isClaimable
+                                            ? "bg-indigo-500/20 text-indigo-300 border border-indigo-500/50 hover:bg-indigo-500/30"
+                                            : "cursor-not-allowed bg-white/5 text-slate-500 border border-white/10"
+                                        }`}
+                                      >
+                                        {isClaimable
+                                          ? "Claim"
+                                          : `Claim at ${new Date(deposit.claimableAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+                                        }
+                                      </button>
                                     </div>
-                                  </div>
-                                  <button
-                                    disabled={!isClaimable}
-                                    className={`px-4 py-2 text-xs font-semibold transition ${
-                                      isClaimable
-                                        ? "bg-indigo-500/20 text-indigo-300 border border-indigo-500/50 hover:bg-indigo-500/30"
-                                        : "cursor-not-allowed bg-white/5 text-slate-500 border border-white/10"
-                                    }`}
-                                  >
-                                    {isClaimable
-                                      ? "Claim"
-                                      : `Claimable at ${new Date(withdrawal.claimableAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
-                                    }
-                                  </button>
-                                </div>
-                              );
-                            })}
-                          </div>
+                                  );
+                                })}
+                              </div>
+                            )}
+                            {pendingWithdrawals.length > 0 && (
+                              <div className="mt-4 pt-4 border-t border-white/20 space-y-3">
+                                <h4 className="text-sm font-semibold text-white uppercase tracking-wider font-mono">
+                                  Pending Withdrawals
+                                </h4>
+                                {pendingWithdrawals.map((withdrawal) => {
+                                  const isClaimable = nowTs >= withdrawal.claimableAt;
+                                  return (
+                                    <div key={withdrawal.id} className="flex items-center justify-between border border-white/10 bg-slate-900 p-3 rounded">
+                                      <div className="flex items-center gap-3">
+                                        <span className="text-sm font-bold uppercase px-2 py-1 border text-orange-300 border-orange-300/50 bg-orange-500/10">
+                                          Pending Withdraw
+                                        </span>
+                                        <div className="font-mono text-white text-lg">
+                                          {withdrawal.amount.toLocaleString()} USDL
+                                        </div>
+                                      </div>
+                                      <button
+                                        disabled={!isClaimable}
+                                        className={`px-4 py-2 text-xs font-semibold transition ${
+                                          isClaimable
+                                            ? "bg-indigo-500/20 text-indigo-300 border border-indigo-500/50 hover:bg-indigo-500/30"
+                                            : "cursor-not-allowed bg-white/5 text-slate-500 border border-white/10"
+                                        }`}
+                                      >
+                                        {isClaimable
+                                          ? "Claim"
+                                          : `Claimable at ${new Date(withdrawal.claimableAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+                                        }
+                                      </button>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </>
                         )}
                       </div>
                     ))}
