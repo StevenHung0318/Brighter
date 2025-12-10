@@ -31,7 +31,7 @@ export default function BrighterApp() {
   const [zapChain, setZapChain] = useState("Arbitrum");
   const [zapAmount, setZapAmount] = useState("2000");
   const [withdrawAmount, setWithdrawAmount] = useState("600");
-  const [depositMode, setDepositMode] = useState<"deposit" | "withdraw">(
+  const [depositMode, setDepositMode] = useState<"deposit" | "withdraw" | "stake">(
     "deposit"
   );
   const [stakeAmount, setStakeAmount] = useState("1500");
@@ -193,62 +193,72 @@ export default function BrighterApp() {
   }, [activeTab]);
   const txHistory = [
     {
-      time: "2025-12-04 06:42:16",
+      time: "2025-12-09 14:22:33",
       action: "Deposit",
       amount: "2,000 USDC",
       receive: "1,960 USDL",
       tx: "0x91e...6cQ27",
     },
     {
-      time: "2025-12-03 12:10:04",
-      action: "Request withdraw",
+      time: "2025-12-08 11:15:22",
+      action: "Request Withdraw",
       amount: "850 USDL",
       tx: "0x7af...d14b1",
     },
     {
-      time: "2025-12-02 20:30:55",
+      time: "2025-12-07 09:30:10",
       action: "Withdraw",
       amount: "1,200 USDC",
       burn: "1,150 USDL",
       tx: "0x4c1...0a9cd",
     },
     {
-      time: "2025-12-01 09:12:12",
-      action: "Deposit",
-      amount: "500 USDC",
-      receive: "488 USDL",
-      tx: "0x12f...98bd2",
+      time: "2025-12-06 16:45:18",
+      action: "Stake",
+      amount: "1,500 USDL",
+      tx: "0xab3...8f2c4",
     },
     {
-      time: "2024-11-22 14:05:42",
-      action: "Deposit",
-      amount: "1,000 USDC",
-      receive: "978 USDL",
-      tx: "0xabd...31ff2",
+      time: "2025-12-05 13:20:55",
+      action: "Claim",
+      amount: "800 USDC",
+      tx: "0x9c2...1d5e7",
     },
     {
-      time: "2024-11-18 16:22:11",
+      time: "2025-12-04 10:30:42",
+      action: "Deposit",
+      amount: "1,800 USDC",
+      receive: "1,764 USDL",
+      tx: "0x6fa...2bd84",
+    },
+    {
+      time: "2025-12-03 15:22:18",
+      action: "Request Withdraw",
+      amount: "1,100 USDL",
+      tx: "0x9ed...4fb22",
+    },
+    {
+      time: "2025-12-02 08:45:33",
       action: "Withdraw",
-      amount: "700 USDC",
-      burn: "670 USDL",
-      tx: "0xbb8...a4c10",
+      amount: "880 USDC",
+      burn: "850 USDL",
+      tx: "0x2af...8cc03",
     },
     {
-      time: "2024-11-10 08:47:33",
-      action: "Request withdraw",
-      amount: "320 USDL",
-      tx: "0xcc1...ab90f",
+      time: "2025-12-01 12:10:05",
+      action: "Stake",
+      amount: "2,100 USDL",
+      tx: "0x8de...5cf91",
     },
     {
-      time: "2024-11-01 10:10:10",
-      action: "Deposit",
-      amount: "1,500 USDC",
-      receive: "1,460 USDL",
-      tx: "0xddf...f1022",
+      time: "2025-11-30 09:33:47",
+      action: "Claim",
+      amount: "950 USDC",
+      tx: "0x3bc...7ea19",
     },
   ];
   const [txPage, setTxPage] = useState(0);
-  const pageSize = 4;
+  const pageSize = 5;
   const txTotalPages = Math.ceil(txHistory.length / pageSize);
   const txPageData = txHistory.slice(
     txPage * pageSize,
@@ -613,7 +623,7 @@ export default function BrighterApp() {
                   <div className="space-y-6 border border-white/10 bg-[#0a0a1f] p-6">
                   <div className="flex items-center justify-between">
                     <div className="inline-flex items-center gap-2 border border-white/10 bg-[#0a0a1f] p-1 text-sm text-white font-mono">
-                      {["deposit", "withdraw"].map((mode) => {
+                      {["deposit", "withdraw", "stake"].map((mode) => {
                         const isActive = depositMode === mode;
                         return (
                           <button
@@ -624,10 +634,10 @@ export default function BrighterApp() {
                                 : "text-gray-500 hover:text-white border border-transparent"
                             }`}
                             onClick={() =>
-                              setDepositMode(mode as "deposit" | "withdraw")
+                              setDepositMode(mode as "deposit" | "withdraw" | "stake")
                             }
                           >
-                            {mode === "deposit" ? "DEPOSIT" : "WITHDRAW"}
+                            {mode === "deposit" ? "DEPOSIT" : mode === "withdraw" ? "WITHDRAW" : "STAKE"}
                           </button>
                         );
                       })}
@@ -778,14 +788,14 @@ export default function BrighterApp() {
                         )}
                       </div>
 
-                      <button className="flex w-full items-center justify-center gap-2 bg-indigo-500 px-6 py-4 text-base font-bold text-white uppercase tracking-[0.2em] transition hover:bg-indigo-600 focus:outline-none font-mono">
+                      <button className="flex w-full items-center justify-center gap-2 bg-indigo-500 px-6 py-4 text-base font-bold text-white uppercase tracking-tight transition hover:bg-indigo-600 focus:outline-none font-mono">
                         <Zap className="h-5 w-5" />
                         {stakeOnDeposit
                           ? `Stake USDC (Withdrawable at ${new Date(unlockAt).toLocaleDateString("en-US", { year: 'numeric', month: 'short', day: 'numeric' })})`
                           : "Deposit USDC"}
                       </button>
                     </>
-                  ) : (
+                  ) : depositMode === "withdraw" ? (
                     <>
                       <div>
                         <label className="text-sm font-medium text-white uppercase tracking-wider font-mono">{'>'} CHAIN</label>
@@ -802,7 +812,7 @@ export default function BrighterApp() {
                       <div className="space-y-3">
                         <div className="flex items-center justify-between text-sm text-white font-mono">
                           <label className="font-medium uppercase tracking-wider">{'>'} WITHDRAW_AMOUNT</label>
-                          <span className="text-gray-500 text-xs">BALANCE: 5,600 USDL</span>
+                          <span className="text-gray-500 text-xs">Deposited: 5,600 USDL</span>
                         </div>
                         <div className="relative">
                           <input
@@ -837,15 +847,103 @@ export default function BrighterApp() {
                             <span className="text-gray-400">Withdrawal time</span>
                             <span className="text-gray-300 font-mono">T+1</span>
                           </div>
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-gray-400">Withdrawable at</span>
+                            <span className="text-gray-300 font-mono text-xs">
+                              {new Date(nowTs + 24 * 3600 * 1000).toLocaleString("en-US", {
+                                month: 'short',
+                                day: 'numeric',
+                                year: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              })}
+                            </span>
+                          </div>
                         </div>
                       </div>
 
                       <button className="flex w-full items-center justify-center gap-2 border border-gray-500/50 bg-gray-500/10 px-6 py-4 text-base font-bold text-gray-300 uppercase tracking-[0.2em] transition hover:bg-gray-500/20 hover:border-gray-400 focus:outline-none font-mono">
                         <Zap className="h-5 w-5" />
-                        {'>'} REQUEST_WITHDRAW
+                        REQUEST WITHDRAW
                       </button>
                     </>
-                  )}
+                  ) : depositMode === "stake" ? (
+                    <>
+                      {/* USDL Amount Input */}
+                      <div className="space-y-2">
+                        <label className="text-xs text-gray-400 font-mono uppercase">USDL Amount</label>
+                        <div className="relative">
+                          <input
+                            value={stakeAmount}
+                            onChange={(e) => setStakeAmount(e.target.value)}
+                            className="w-full border border-white/20 bg-black/40 px-4 py-3 pr-20 text-lg font-mono text-white focus:border-cyan-400/60 focus:outline-none"
+                            placeholder="0"
+                          />
+                          <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center gap-2">
+                            <img
+                              src={usdlLogo}
+                              alt="USDL"
+                              className="h-6 w-6 rounded-full"
+                            />
+                            <span className="text-sm font-medium text-white font-mono">USDL</span>
+                          </div>
+                        </div>
+                        <div className="text-xs text-gray-500 font-mono">
+                          Balance: 5,600 USDL
+                        </div>
+                      </div>
+
+                      {/* Stake Period */}
+                      <div className="space-y-3">
+                        <label className="text-xs text-gray-400 font-mono uppercase">
+                          Stake period (longer = higher boost)
+                        </label>
+                        <div className="grid grid-cols-4 gap-3">
+                          {(["30d", "90d", "180d", "365d"] as const).map((period) => (
+                            <button
+                              key={period}
+                              onClick={() => setStakePeriod(period)}
+                              className={`border py-3 text-sm font-semibold font-mono transition ${
+                                stakePeriod === period
+                                  ? "border-cyan-400 bg-cyan-400/10 text-cyan-400"
+                                  : "border-white/20 bg-black/40 text-gray-400 hover:border-white/40 hover:text-white"
+                              }`}
+                            >
+                              {period}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Estimated Points */}
+                      <div className="border border-white/20 bg-black/40 p-4 space-y-3">
+                        <h3 className="text-sm font-medium text-white uppercase tracking-wider font-mono">
+                          Estimated Rewards
+                        </h3>
+                        <div className="space-y-2">
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-gray-400 font-mono">Est. Daily Lighter Points:</span>
+                            <span className="text-cyan-400 font-mono font-semibold">
+                              {((Number(stakeAmount) || 0) * (stakePointRates[stakePeriod]?.lighter ?? 0) /
+                                { "30d": 30, "90d": 90, "180d": 180, "365d": 365 }[stakePeriod]).toFixed(2)}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-gray-400 font-mono">Est. Daily Brighter Points:</span>
+                            <span className="text-cyan-400 font-mono font-semibold">
+                              {((Number(stakeAmount) || 0) * (stakePointRates[stakePeriod]?.brighter ?? 0) /
+                                { "30d": 30, "90d": 90, "180d": 180, "365d": 365 }[stakePeriod]).toFixed(2)}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Stake Button */}
+                      <button className="w-full border-2 border-cyan-400 bg-cyan-400/10 px-6 py-3 text-sm font-bold uppercase tracking-[0.2em] text-cyan-400 transition hover:bg-cyan-400/20 font-mono">
+                        Stake USDL
+                      </button>
+                    </>
+                  ) : null}
                   </div>
                 </div>
               </div>
@@ -937,7 +1035,7 @@ export default function BrighterApp() {
                           )}
                           {pos.type === 'Deposit' && (
                             <div className="text-sm font-semibold text-green-400 font-mono">
-                              Earning {headlineApr}
+                              Earning APR {headlineApr}
                             </div>
                           )}
                         </div>
@@ -1045,6 +1143,12 @@ export default function BrighterApp() {
                                     ? "border-cyan-400/60 bg-cyan-400/15 text-cyan-300"
                                     : tx.action === "Withdraw"
                                     ? "border-amber-400/60 bg-amber-400/15 text-amber-300"
+                                    : tx.action === "Request Withdraw"
+                                    ? "border-orange-400/60 bg-orange-400/15 text-orange-300"
+                                    : tx.action === "Stake"
+                                    ? "border-purple-400/60 bg-purple-400/15 text-purple-300"
+                                    : tx.action === "Claim"
+                                    ? "border-green-400/60 bg-green-400/15 text-green-300"
                                     : "border-green-500/40 bg-green-500/10 text-green-400"
                                 }`}
                               >
@@ -1127,180 +1231,6 @@ export default function BrighterApp() {
                   </div>
                 </div>
               )}
-            </section>
-          )}
-
-          {activeTab === "Stake" && (
-            <section className="relative overflow-hidden  border border-white/5 bg-gradient-to-br from-slate-900 via-slate-950 to-slate-900 p-6 shadow-xl shadow-cyan-500/15 backdrop-blur">
-              <div className="absolute -left-16 -top-16 h-48 w-48  bg-gradient-to-br from-cyan-400/10 via-transparent to-yellow-300/10 blur-3xl" />
-              <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                <div>
-                  <h2 className="text-2xl font-semibold text-white">
-                    Stake USDL, earn extra points
-                  </h2>
-                  <p className="text-sm text-slate-300">
-                    Lock USDL to farm Lighter &amp; Brighter points on top of
-                    base yield.
-                  </p>
-                </div>
-              </div>
-
-              <div className="mt-6 grid gap-5 lg:grid-cols-2">
-                <div className="space-y-4  border border-white/10 bg-slate-950/70 p-5 shadow-inner shadow-cyan-500/10">
-                  <div className="flex items-center justify-between text-xs text-slate-400">
-                    <label>Stake USDL</label>
-                    <span>Wallet balance: 5,600 USDL</span>
-                  </div>
-                  <div className="relative">
-                    <input
-                      value={stakeAmount}
-                      onChange={(e) => setStakeAmount(e.target.value)}
-                      className="w-full  border border-white/10 bg-slate-950/70 px-4 py-3 pr-28 text-lg font-mono text-white focus:border-cyan-400/60 focus:outline-none"
-                      placeholder="0.0"
-                    />
-                    <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center gap-2 text-sm font-semibold text-white">
-                      <img
-                        src={usdlLogo}
-                        alt="USDL"
-                        className="h-8 w-8  bg-slate-900 p-[1px]"
-                      />
-                      USDL
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between text-xs text-slate-400">
-                    <span>Stake period (longer = higher boost)</span>
-                    <div className="flex gap-2">
-                      {(["30d", "90d", "180d", "365d"] as const).map(
-                        (period) => (
-                          <button
-                            key={period}
-                            onClick={() => setStakePeriod(period)}
-                            className={` px-3 py-1 font-semibold ${
-                              stakePeriod === period
-                                ? "bg-cyan-400/20 text-cyan-100"
-                                : "bg-white/5 text-slate-300 hover:text-white"
-                            }`}
-                          >
-                            {period}
-                          </button>
-                        )
-                      )}
-                    </div>
-                  </div>
-                  <div className="text-xs text-slate-400">
-                    Unlock at: {new Date(unlockAt).toLocaleString()}
-                  </div>
-                  <div className="grid gap-3 md:grid-cols-3 lg:grid-cols-2">
-                    <Metric
-                      label="You earn lighter points"
-                      value={
-                        <span className="flex items-center gap-2">
-                          {totalLighter.toFixed(2)}
-                          <span className="text-xs text-slate-300">pts</span>
-                          <span className="text-[11px] text-cyan-200">
-                            ({stakePointRates[stakePeriod]?.lighter}x)
-                          </span>
-                        </span>
-                      }
-                    />
-                    <Metric
-                      label="You earn brighter points"
-                      value={
-                        <span className="flex items-center gap-2">
-                          {totalBrighter.toFixed(2)}
-                          <span className="text-xs text-slate-300">pts</span>
-                          <span className="text-[11px] text-cyan-200">
-                            ({stakePointRates[stakePeriod]?.brighter}x)
-                          </span>
-                        </span>
-                      }
-                    />
-                  </div>
-
-                  <button className="flex w-full items-center justify-center gap-2  bg-gradient-to-r from-cyan-400 to-emerald-400 px-4 py-3 text-sm font-semibold text-slate-950 shadow-xl shadow-cyan-400/30 transition hover:-translate-y-0.5 focus:outline-none">
-                    <Zap className="h-4 w-4" />
-                    Stake USDL
-                  </button>
-                </div>
-
-                <div className="space-y-4  border border-white/10 bg-slate-950/70 p-5 shadow-inner shadow-cyan-500/15">
-                  <div className="grid grid-cols-1 gap-3 text-xs text-slate-300 sm:grid-cols-2">
-                    <div className=" border border-white/10 bg-white/5 px-3 py-3">
-                      <div className="text-slate-400">Your lighter points</div>
-                      <div className="font-mono text-lg text-cyan-100">
-                        {(claimReady ? totalLighter : 0).toFixed(2)}
-                      </div>
-                      <div className="text-[11px] text-slate-400">
-                        Earned points
-                      </div>
-                    </div>
-                    <div className=" border border-white/10 bg-white/5 px-3 py-3">
-                      <div className="text-slate-400">Your brighter points</div>
-                      <div className="font-mono text-lg text-cyan-100">
-                        {(claimReady ? totalBrighter : 0).toFixed(2)}
-                      </div>
-                      <div className="text-[11px] text-slate-400">
-                        Earned points
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="space-y-3  border border-white/10 bg-white/5 p-4">
-                    <p className="text-sm font-semibold text-white">
-                      Your positions
-                    </p>
-                    <div className="space-y-3">
-                      {stakePositions.map((pos) => {
-                        const ready = nowTs >= pos.unlockAt;
-                        const earnedL =
-                          (pos.amount || 0) * (currentRates?.lighter ?? 0);
-                        const earnedB =
-                          (pos.amount || 0) * (currentRates?.brighter ?? 0);
-                        return (
-                          <div
-                            key={pos.id}
-                            className="flex items-center justify-between  border border-white/10 bg-white/5 px-4 py-3 text-sm text-white"
-                          >
-                            <div>
-                              <div className="text-xs uppercase tracking-[0.15em] text-slate-400">
-                                Staked amount
-                              </div>
-                              <div className="font-mono text-white">
-                                {pos.amount} USDL
-                              </div>
-                              <div className="text-[11px] text-slate-400">
-                                Unlock at{" "}
-                                {new Date(pos.unlockAt).toLocaleString()}
-                              </div>
-                              <div className="text-[11px] text-cyan-100">
-                                Earned: {earnedL.toFixed(2)} L /{" "}
-                                {earnedB.toFixed(2)} B
-                              </div>
-                            </div>
-                            <button
-                              disabled={!ready}
-                              title={
-                                ready
-                                  ? "Claim points"
-                                  : `Claimable at ${new Date(
-                                      pos.unlockAt
-                                    ).toLocaleString()}`
-                              }
-                              className={` px-4 py-2 text-xs font-semibold transition ${
-                                ready
-                                  ? "bg-gradient-to-r from-cyan-400 to-emerald-400 text-slate-950 shadow-cyan-400/30 shadow-lg"
-                                  : "cursor-not-allowed bg-white/10 text-slate-500"
-                              }`}
-                            >
-                              Claim
-                            </button>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </div>
-              </div>
             </section>
           )}
 
