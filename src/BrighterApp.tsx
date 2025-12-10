@@ -963,26 +963,6 @@ export default function BrighterApp() {
                   </button>
                 </div>
 
-                  <div className="border border-white/10 bg-slate-800 p-5 rounded-lg">
-                    <h3 className="text-base font-semibold text-white uppercase tracking-wider font-mono mb-4">
-                      LIFETIME EARNINGS
-                    </h3>
-                    <div className="grid grid-cols-3 gap-4">
-                      <div>
-                        <p className="text-xs text-slate-400 uppercase tracking-wider">USDC</p>
-                        <p className="text-xl font-mono text-white">${lifetimeEarnings.usd.toFixed(2)}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-slate-400 uppercase tracking-wider">Lighter Points</p>
-                        <p className="text-xl font-mono text-white">{lifetimeEarnings.lighter.toLocaleString()} pt</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-slate-400 uppercase tracking-wider">Brighter Points</p>
-                        <p className="text-xl font-mono text-white">{lifetimeEarnings.brighter.toLocaleString()} pt</p>
-                      </div>
-                    </div>
-                  </div>
-
                   <div className="inline-flex items-center gap-2 border border-white/10 bg-[#0a0a1f] p-1 text-sm text-white font-mono">
                     {(["Deposit", "Staked"] as const).map((tab) => (
                       <button
@@ -1040,22 +1020,6 @@ export default function BrighterApp() {
                             </div>
                           )}
                         </div>
-                        {pos.type === 'Staked' && (
-                          <div className="mt-4 pt-4 border-t border-white/20 grid grid-cols-3 gap-4">
-                            <div>
-                              <p className="text-xs text-slate-400 uppercase tracking-wider">Earned (USD)</p>
-                              <p className="text-lg font-mono text-white">${pos.earnedUSD.toFixed(2)}</p>
-                            </div>
-                            <div>
-                              <p className="text-xs text-slate-400 uppercase tracking-wider">Earned (Lighter)</p>
-                              <p className="text-lg font-mono text-white">{pos.earnedLighter.toLocaleString()} pt</p>
-                            </div>
-                            <div>
-                              <p className="text-xs text-slate-400 uppercase tracking-wider">Earned (Brighter)</p>
-                              <p className="text-lg font-mono text-white">{pos.earnedBrighter.toLocaleString()} pt</p>
-                            </div>
-                          </div>
-                        )}
                         {pos.type === 'Deposit' && pendingWithdrawals.length > 0 && (
                           <div className="mt-4 pt-4 border-t border-white/20 space-y-3">
                             <h4 className="text-sm font-semibold text-white uppercase tracking-wider font-mono">
