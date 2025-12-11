@@ -635,7 +635,7 @@ export default function BrighterApp() {
                   {/* Main Deposit/Withdraw Section - Enhanced */}
                   <div className="space-y-6 border border-white/10 bg-[#0a0a1f] p-6">
                   <div className="flex items-center justify-between">
-                    <div className="inline-flex items-center gap-2 border border-white/10 bg-[#0a0a1f] p-1 text-sm text-white font-mono">
+                    <div className="grid grid-cols-3 w-full gap-2 border border-white/10 bg-[#0a0a1f] p-1 text-sm text-white font-mono">
                       {["deposit", "withdraw", "stake"].map((mode) => {
                         const isActive = depositMode === mode;
                         return (
