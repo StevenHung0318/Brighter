@@ -49,7 +49,7 @@ export default function BrighterApp() {
   const [yourPositionsTab, setYourPositionsTab] = useState<"Deposit" | "Staked">("Deposit");
   const totalDeposited = "$128.4M";
   const yourDeposited = "$12,400";
-  const headlineApr = "63%";
+  const headlineApr = "34.5%";
   const stakeBoostMap: Record<"30d" | "90d" | "180d" | "365d", number> = {
     "30d": 1,
     "90d": 2,
@@ -1896,9 +1896,9 @@ function APRHistoryCard({
     <div className="space-y-4 border border-white/10 bg-black p-5">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <button className="px-3 py-1 text-sm font-medium text-white border-b-2 border-blue-500">
-            NAV
-          </button>
+          <span className="text-sm font-medium text-white">
+            LLP Historic Performance (Net Asset Value)
+          </span>
         </div>
         <div className="relative flex items-center gap-2 text-xs">
           <button
