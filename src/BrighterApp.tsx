@@ -772,7 +772,13 @@ export default function BrighterApp() {
                                 }
                               )}
                             </div>
-                            <div className="mt-4 pt-4 border-t border-white/10 text-sm">
+                            <div className="mt-4 pt-4 border-t border-white/10 text-sm space-y-2">
+                                <div className="flex justify-between text-slate-300">
+                                    <span>Lighter Points Boost</span>
+                                    <span className="font-mono text-cyan-300">
+                                      {({ "30d": "1x", "90d": "2x", "180d": "3x", "365d": "4x" }[stakePeriod])}
+                                    </span>
+                                </div>
                                 <div className="flex justify-between text-slate-300">
                                     <span>Est. Daily Lighter Points:</span>
                                     <span className="font-mono text-cyan-300">{dailyLighterOnDeposit.toFixed(2)}</span>
