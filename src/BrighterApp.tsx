@@ -581,15 +581,7 @@ export default function BrighterApp() {
                 {/* Left Column: Header, Stats, Chart */}
                 <div className="space-y-6">
                   <div>
-                    <h2 className="text-xl font-bold text-white uppercase tracking-wider md:text-2xl border-l-4 border-indigo-500 pl-4">
-                      DEPOSIT_USDC & GET <br/>
-                      <span className="inline-flex items-baseline gap-2">
-                        <span className="text-4xl font-bold text-indigo-300 md:text-5xl">
-                          {depositPercent}%
-                        </span>
-                        <span className="text-xl text-indigo-300 md:text-2xl">LLP_ALLOCATION</span>
-                      </span>
-                    </h2>
+                    <TypewriterText />
                   </div>
 
                   <div className="grid gap-5 md:grid-cols-3">
@@ -606,7 +598,7 @@ export default function BrighterApp() {
                       onMouseEnter={() => setAprHover(true)}
                       onMouseLeave={() => setAprHover(false)}
                     >
-                      <p className="text-xs uppercase tracking-[0.2em] text-gray-500 font-mono">
+                      <p className="text-xs uppercase tracking-[-0.06em] text-gray-500 font-mono">
                         APR
                       </p>
                       <p className="text-2xl font-semibold text-white font-mono">
@@ -894,12 +886,6 @@ export default function BrighterApp() {
                         </h3>
                         <div className="space-y-2">
                           <div className="flex items-center justify-between text-sm">
-                            <span className="text-gray-400">You will receive</span>
-                            <span className="text-cyan-400 font-mono font-semibold">
-                              {Number(withdrawAmount || 0).toFixed(0)} USDC
-                            </span>
-                          </div>
-                          <div className="flex items-center justify-between text-sm">
                             <span className="text-gray-400">Withdrawal time</span>
                             <span className="text-gray-300 font-mono">T+1</span>
                           </div>
@@ -985,6 +971,12 @@ export default function BrighterApp() {
                         </h3>
                         <div className="space-y-2">
                           <div className="flex items-center justify-between text-sm">
+                            <span className="text-gray-400 font-mono">Lighter Points Boost</span>
+                            <span className="text-cyan-300 font-mono font-semibold">
+                              {({ "30d": "1x", "90d": "2x", "180d": "3x", "365d": "4x" }[stakePeriod])}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between text-sm">
                             <span className="text-gray-400 font-mono">Est. Daily Lighter Points:</span>
                             <span className="text-cyan-400 font-mono font-semibold">
                               {((Number(stakeAmount) || 0) * (stakePointRates[stakePeriod]?.lighter ?? 0) /
@@ -1054,10 +1046,10 @@ export default function BrighterApp() {
                                 ? 'text-cyan-300 border-cyan-300/50 bg-cyan-500/10'
                                 : 'text-indigo-300 border-indigo-300/50 bg-indigo-500/10'
                             }`}>
-                              {pos.type}
+                              {pos.type === 'Deposit' ? 'You Deposited' : pos.type}
                             </span>
                             <div className="font-mono text-white text-lg">
-                              {pos.amount.toLocaleString()} USDL
+                              {pos.amount.toLocaleString()} {pos.type === 'Deposit' ? 'USDC' : 'USDL'}
                             </div>
                           </div>
                           {pos.type === 'Staked' && pos.unlockAt && (
@@ -1092,6 +1084,8 @@ export default function BrighterApp() {
                                 </h4>
                                 {pendingDeposits.map((deposit) => {
                                   const isClaimable = nowTs >= deposit.claimableAt;
+                                  const claimableDate = new Date(deposit.claimableAt);
+                                  const formattedDate = `${claimableDate.getMonth() + 1}/${claimableDate.getDate()}/${claimableDate.getFullYear()}, ${claimableDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
                                   return (
                                     <div key={deposit.id} className="flex items-center justify-between border border-white/10 bg-slate-900 p-3 rounded">
                                       <div className="flex items-center gap-3">
@@ -1111,8 +1105,8 @@ export default function BrighterApp() {
                                         }`}
                                       >
                                         {isClaimable
-                                          ? "Claim"
-                                          : `Claim at ${new Date(deposit.claimableAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+                                          ? `Claim ${(deposit.amount * 0.9987).toFixed(1)} sBLUSD`
+                                          : `sUSDL Claimable at ${formattedDate}`
                                         }
                                       </button>
                                     </div>
@@ -1127,14 +1121,16 @@ export default function BrighterApp() {
                                 </h4>
                                 {pendingWithdrawals.map((withdrawal) => {
                                   const isClaimable = nowTs >= withdrawal.claimableAt;
+                                  const claimableDate = new Date(withdrawal.claimableAt);
+                                  const formattedDate = `${claimableDate.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' })}, ${claimableDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })}`;
                                   return (
                                     <div key={withdrawal.id} className="flex items-center justify-between border border-white/10 bg-slate-900 p-3 rounded">
                                       <div className="flex items-center gap-3">
                                         <span className="text-sm font-bold uppercase px-2 py-1 border text-orange-300 border-orange-300/50 bg-orange-500/10">
-                                          Pending Withdraw
+                                          Pending Withdrawal
                                         </span>
                                         <div className="font-mono text-white text-lg">
-                                          {withdrawal.amount.toLocaleString()} USDL
+                                          {withdrawal.amount.toLocaleString()} sUSDL
                                         </div>
                                       </div>
                                       <button
@@ -1146,8 +1142,8 @@ export default function BrighterApp() {
                                         }`}
                                       >
                                         {isClaimable
-                                          ? "Claim"
-                                          : `Claimable at ${new Date(withdrawal.claimableAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+                                          ? `Claim ${(withdrawal.amount * 1.006).toFixed(1)} USDC`
+                                          : `USDC Claimable at ${formattedDate}`
                                         }
                                       </button>
                                     </div>
@@ -1571,7 +1567,7 @@ function HoverAmountCard({ label, amount }: { label: string; amount: string }) {
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
     >
-      <p className="text-xs uppercase tracking-[0.2em] text-gray-500 font-mono">
+      <p className="text-xs uppercase tracking-[-0.06em] text-gray-500 font-mono">
         {label}
       </p>
       <p className="text-2xl font-semibold text-white font-mono">{amount}</p>
@@ -2051,4 +2047,120 @@ function formatDuration(ms: number) {
     .toString()
     .padStart(2, "0");
   return `${h}:${m}:${s}`;
+}
+
+function TypewriterText() {
+  const messages = [
+    {
+      line2: "100%",
+      line3: "LLP_ALLOCATION"
+    },
+    {
+      line2: "35% APR and Lighter Pts",
+      line3: ""
+    }
+  ];
+
+  const [messageIndex, setMessageIndex] = useState(0);
+  const [displayText, setDisplayText] = useState({ line2: "", line3: "" });
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [charIndex, setCharIndex] = useState(0);
+  const [currentLine, setCurrentLine] = useState<'line2' | 'line3'>('line2');
+
+  useEffect(() => {
+    const currentMessage = messages[messageIndex];
+    const targetText = currentMessage[currentLine];
+
+    if (!isDeleting) {
+      // Typing
+      if (charIndex < targetText.length) {
+        const timer = setTimeout(() => {
+          setDisplayText(prev => ({
+            ...prev,
+            [currentLine]: targetText.substring(0, charIndex + 1)
+          }));
+          setCharIndex(charIndex + 1);
+        }, 50);
+        return () => clearTimeout(timer);
+      } else {
+        // Move to next line
+        if (currentLine === 'line2') {
+          setCurrentLine('line3');
+          setCharIndex(0);
+        } else {
+          // All lines typed, wait before deleting
+          const timer = setTimeout(() => {
+            setIsDeleting(true);
+            setCurrentLine('line3');
+          }, 3000);
+          return () => clearTimeout(timer);
+        }
+        return undefined;
+      }
+    } else {
+      // Deleting
+      if (currentLine === 'line3' && displayText.line3.length > 0) {
+        const timer = setTimeout(() => {
+          setDisplayText(prev => ({
+            ...prev,
+            line3: prev.line3.substring(0, prev.line3.length - 1)
+          }));
+        }, 30);
+        return () => clearTimeout(timer);
+      } else if (currentLine === 'line3' && displayText.line3.length === 0) {
+        setCurrentLine('line2');
+      } else if (currentLine === 'line2' && displayText.line2.length > 0) {
+        const timer = setTimeout(() => {
+          setDisplayText(prev => ({
+            ...prev,
+            line2: prev.line2.substring(0, prev.line2.length - 1)
+          }));
+        }, 30);
+        return () => clearTimeout(timer);
+      } else {
+        // All deleted, switch message
+        setMessageIndex((messageIndex + 1) % messages.length);
+        setIsDeleting(false);
+        setCurrentLine('line2');
+        setCharIndex(0);
+      }
+      return undefined;
+    }
+  }, [charIndex, isDeleting, messageIndex, currentLine, displayText]);
+
+  return (
+    <h2 className="text-xl font-bold text-white uppercase tracking-wider md:text-3xl font-mono h-24 md:h-28">
+      DEPOSIT_USDC & GET
+      <br/>
+      {displayText.line2 && (
+        <span className="inline-flex items-baseline gap-2">
+          {displayText.line2.includes('%') && !displayText.line2.includes('APR') ? (
+            <>
+              <span className="text-4xl font-bold text-green-400 md:text-6xl">
+                {displayText.line2}
+              </span>
+              {displayText.line3 && (
+                <span className="text-xl text-green-400 md:text-3xl">
+                  {displayText.line3}
+                </span>
+              )}
+            </>
+          ) : displayText.line2.match(/^\d+%/) ? (
+            <>
+              <span className="text-4xl font-bold text-green-400 md:text-6xl">
+                {displayText.line2.match(/^\d+%/)?.[0]}
+              </span>
+              <span className="text-xl text-green-400 md:text-2xl">
+                {displayText.line2.replace(/^\d+%\s*/, '')}
+              </span>
+            </>
+          ) : (
+            <span className="text-xl text-green-400 md:text-2xl">
+              {displayText.line2}
+            </span>
+          )}
+        </span>
+      )}
+    </h2>
+  );
 }
