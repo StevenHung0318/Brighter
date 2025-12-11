@@ -748,7 +748,7 @@ export default function BrighterApp() {
                         {stakeOnDeposit && (
                           <div className="space-y-3 border-t border-white/10 pt-4">
                             <label className="text-sm text-slate-400">Stake period (longer = higher boost)</label>
-                            <div className="flex flex-wrap gap-2">
+                            <div className="grid grid-cols-4 gap-2">
                               {(["30d", "90d", "180d", "365d"] as const).map(
                                 (period) => {
                                   const boostMultiplier = { "30d": "1x", "90d": "2x", "180d": "3x", "365d": "4x" }[period];
@@ -756,8 +756,7 @@ export default function BrighterApp() {
                                     <button
                                       key={period}
                                       onClick={() => setStakePeriod(period)}
-                                      title={`${boostMultiplier} Lighter pts boost`}
-                                      className={`group relative rounded px-4 py-2 text-sm font-semibold transition flex items-center gap-2 ${
+                                      className={`group relative rounded px-4 py-2 text-sm font-semibold transition flex items-center justify-center gap-2 ${
                                         stakePeriod === period
                                           ? "bg-cyan-400/20 text-cyan-100 border border-cyan-400/50"
                                           : "bg-white/5 text-slate-300 hover:text-white border border-transparent"
@@ -765,6 +764,9 @@ export default function BrighterApp() {
                                     >
                                       <span>{period}</span>
                                       <span className="text-xs opacity-70">{boostMultiplier}</span>
+                                      <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block whitespace-nowrap bg-black border border-white/20 px-2 py-1 text-xs text-white rounded">
+                                        {boostMultiplier} Lighter pts boost
+                                      </span>
                                     </button>
                                   );
                                 }
@@ -953,8 +955,7 @@ export default function BrighterApp() {
                               <button
                                 key={period}
                                 onClick={() => setStakePeriod(period)}
-                                title={`${boostMultiplier} Lighter pts boost`}
-                                className={`border py-3 text-sm font-semibold font-mono transition flex flex-col items-center gap-1 ${
+                                className={`group relative border py-3 text-sm font-semibold font-mono transition flex flex-col items-center gap-1 ${
                                   stakePeriod === period
                                     ? "border-cyan-400 bg-cyan-400/10 text-cyan-400"
                                     : "border-white/20 bg-black/40 text-gray-400 hover:border-white/40 hover:text-white"
@@ -962,6 +963,9 @@ export default function BrighterApp() {
                               >
                                 <span>{period}</span>
                                 <span className="text-xs opacity-70">{boostMultiplier}</span>
+                                <span className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block whitespace-nowrap bg-black border border-white/20 px-2 py-1 text-xs text-white rounded z-10">
+                                  {boostMultiplier} Lighter pts boost
+                                </span>
                               </button>
                             );
                           })}
