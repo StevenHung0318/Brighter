@@ -750,19 +750,24 @@ export default function BrighterApp() {
                             <label className="text-sm text-slate-400">Stake period (longer = higher boost)</label>
                             <div className="flex flex-wrap gap-2">
                               {(["30d", "90d", "180d", "365d"] as const).map(
-                                (period) => (
-                                  <button
-                                    key={period}
-                                    onClick={() => setStakePeriod(period)}
-                                    className={`rounded px-4 py-2 text-sm font-semibold transition ${
-                                      stakePeriod === period
-                                        ? "bg-cyan-400/20 text-cyan-100 border border-cyan-400/50"
-                                        : "bg-white/5 text-slate-300 hover:text-white border border-transparent"
-                                    }`}
-                                  >
-                                    {period}
-                                  </button>
-                                )
+                                (period) => {
+                                  const boostMultiplier = { "30d": "1x", "90d": "2x", "180d": "3x", "365d": "4x" }[period];
+                                  return (
+                                    <button
+                                      key={period}
+                                      onClick={() => setStakePeriod(period)}
+                                      title={`${boostMultiplier} Lighter pts boost`}
+                                      className={`group relative rounded px-4 py-2 text-sm font-semibold transition flex items-center gap-2 ${
+                                        stakePeriod === period
+                                          ? "bg-cyan-400/20 text-cyan-100 border border-cyan-400/50"
+                                          : "bg-white/5 text-slate-300 hover:text-white border border-transparent"
+                                      }`}
+                                    >
+                                      <span>{period}</span>
+                                      <span className="text-xs opacity-70">{boostMultiplier}</span>
+                                    </button>
+                                  );
+                                }
                               )}
                             </div>
                             <div className="mt-4 pt-4 border-t border-white/10 text-sm">
@@ -942,19 +947,24 @@ export default function BrighterApp() {
                           Stake period (longer = higher boost)
                         </label>
                         <div className="grid grid-cols-4 gap-3">
-                          {(["30d", "90d", "180d", "365d"] as const).map((period) => (
-                            <button
-                              key={period}
-                              onClick={() => setStakePeriod(period)}
-                              className={`border py-3 text-sm font-semibold font-mono transition ${
-                                stakePeriod === period
-                                  ? "border-cyan-400 bg-cyan-400/10 text-cyan-400"
-                                  : "border-white/20 bg-black/40 text-gray-400 hover:border-white/40 hover:text-white"
-                              }`}
-                            >
-                              {period}
-                            </button>
-                          ))}
+                          {(["30d", "90d", "180d", "365d"] as const).map((period) => {
+                            const boostMultiplier = { "30d": "1x", "90d": "2x", "180d": "3x", "365d": "4x" }[period];
+                            return (
+                              <button
+                                key={period}
+                                onClick={() => setStakePeriod(period)}
+                                title={`${boostMultiplier} Lighter pts boost`}
+                                className={`border py-3 text-sm font-semibold font-mono transition flex flex-col items-center gap-1 ${
+                                  stakePeriod === period
+                                    ? "border-cyan-400 bg-cyan-400/10 text-cyan-400"
+                                    : "border-white/20 bg-black/40 text-gray-400 hover:border-white/40 hover:text-white"
+                                }`}
+                              >
+                                <span>{period}</span>
+                                <span className="text-xs opacity-70">{boostMultiplier}</span>
+                              </button>
+                            );
+                          })}
                         </div>
                       </div>
 
