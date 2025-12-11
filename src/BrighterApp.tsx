@@ -784,29 +784,50 @@ export default function BrighterApp() {
                           Detail
                         </h3>
                         <div className="space-y-2">
-                          <div className="flex items-center justify-between text-sm">
-                            <span className="text-gray-400 flex items-center gap-1">
-                              You can claim sUSDL after
-                              <span className="inline-flex items-center justify-center w-4 h-4 text-xs border border-gray-400 rounded-full">?</span>
-                            </span>
-                            <span className="text-gray-300 font-mono">
-                              12/20/2025, 16:00 PM
-                            </span>
-                          </div>
-                          <div className="flex items-center justify-between text-sm">
-                            <span className="text-gray-400 flex items-center gap-1">
-                              Performance fee
-                              <span className="inline-flex items-center justify-center w-4 h-4 text-xs border border-gray-400 rounded-full">?</span>
-                            </span>
-                            <span className="text-gray-300 font-mono">10%</span>
-                          </div>
-                          <div className="flex items-center justify-between text-sm">
-                            <span className="text-gray-400 flex items-center gap-1">
-                              Withdrawal period
-                              <span className="inline-flex items-center justify-center w-4 h-4 text-xs border border-gray-400 rounded-full">?</span>
-                            </span>
-                            <span className="text-cyan-400 font-mono">Less than 24 hours</span>
-                          </div>
+                          {stakeOnDeposit ? (
+                            <>
+                              <div className="flex items-center justify-between text-sm">
+                                <span className="text-gray-400 flex items-center gap-1">
+                                  Performance fee
+                                  <span className="inline-flex items-center justify-center w-4 h-4 text-xs border border-gray-400 rounded-full">?</span>
+                                </span>
+                                <span className="text-gray-300 font-mono">10%</span>
+                              </div>
+                              <div className="flex items-center justify-between text-sm">
+                                <span className="text-gray-400 flex items-center gap-1">
+                                  Withdrawable at
+                                  <span className="inline-flex items-center justify-center w-4 h-4 text-xs border border-gray-400 rounded-full">?</span>
+                                </span>
+                                <span className="text-yellow-400 font-mono">JUN 8, 2026</span>
+                              </div>
+                            </>
+                          ) : (
+                            <>
+                              <div className="flex items-center justify-between text-sm">
+                                <span className="text-gray-400 flex items-center gap-1">
+                                  You can claim sUSDL after
+                                  <span className="inline-flex items-center justify-center w-4 h-4 text-xs border border-gray-400 rounded-full">?</span>
+                                </span>
+                                <span className="text-gray-300 font-mono">
+                                  12/20/2025, 16:00 PM
+                                </span>
+                              </div>
+                              <div className="flex items-center justify-between text-sm">
+                                <span className="text-gray-400 flex items-center gap-1">
+                                  Performance fee
+                                  <span className="inline-flex items-center justify-center w-4 h-4 text-xs border border-gray-400 rounded-full">?</span>
+                                </span>
+                                <span className="text-gray-300 font-mono">10%</span>
+                              </div>
+                              <div className="flex items-center justify-between text-sm">
+                                <span className="text-gray-400 flex items-center gap-1">
+                                  Withdrawal period
+                                  <span className="inline-flex items-center justify-center w-4 h-4 text-xs border border-gray-400 rounded-full">?</span>
+                                </span>
+                                <span className="text-cyan-400 font-mono">Less than 24 hours</span>
+                              </div>
+                            </>
+                          )}
                         </div>
                       </div>
 
