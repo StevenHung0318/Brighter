@@ -13,6 +13,30 @@ import llpLogo from "./Assets/LLP_logo.jpg";
 import usdcLogo from "./Assets/USDC_logo.png";
 import usdlLogo from "./Assets/usdl.png";
 
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler,
+} from 'chart.js';
+import { Line } from 'react-chartjs-2';
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler
+);
+
 const formatPercent = (value: number) => `${value.toFixed(1)}%`;
 type Tab = "Loop" | "Earn" | "Deposit" | "Borrow" | "Stake";
 const chainIcons: Record<string, string> = {
@@ -29,12 +53,12 @@ export default function BrighterApp() {
   const [usdcSupply, setUsdcSupply] = useState("5000");
   const [borrowAmount, setBorrowAmount] = useState("5000");
   const [zapChain, setZapChain] = useState("Arbitrum");
-  const [zapAmount, setZapAmount] = useState("2000");
-  const [withdrawAmount, setWithdrawAmount] = useState("600");
+  const [zapAmount, setZapAmount] = useState("");
+  const [withdrawAmount, setWithdrawAmount] = useState("");
   const [depositMode, setDepositMode] = useState<"deposit" | "withdraw" | "stake">(
     "deposit"
   );
-  const [stakeAmount, setStakeAmount] = useState("1500");
+  const [stakeAmount, setStakeAmount] = useState("");
   const [stakePeriod, setStakePeriod] = useState<
     "30d" | "90d" | "180d" | "365d"
   >("30d");
@@ -47,6 +71,37 @@ export default function BrighterApp() {
   const [stakeOnDeposit, setStakeOnDeposit] = useState(false);
   const [showTxHistory, setShowTxHistory] = useState(false);
   const [yourPositionsTab, setYourPositionsTab] = useState<"Deposit" | "Staked">("Deposit");
+
+  // Usability Test Mode
+  const [isTestMode, setIsTestMode] = useState(false);
+  const [testPositions, setTestPositions] = useState<Array<{
+    id: string;
+    type: 'Deposit' | 'Staked';
+    amount: number;
+    earnedUSD: number;
+    earnedLighter: number;
+    earnedBrighter: number;
+    unlockAt?: number;
+  }>>([]);
+  const [testPendingDeposits, setTestPendingDeposits] = useState<Array<{
+    id: string;
+    amount: number;
+    claimableAt: number;
+  }>>([]);
+  const [testPendingWithdrawals, setTestPendingWithdrawals] = useState<Array<{
+    id: string;
+    amount: number;
+    claimableAt: number;
+  }>>([]);
+  const [userBalance, setUserBalance] = useState(10000); // Starting balance for test mode
+  const [showLoadingModal, setShowLoadingModal] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [successModalData, setSuccessModalData] = useState<{
+    type: 'deposit' | 'stake' | 'withdraw';
+    amount: number;
+    claimableAt?: number;
+  } | null>(null);
+
   const totalDeposited = "$128.4M";
   const yourDeposited = "$12,400";
   const headlineApr = "34.5%";
@@ -109,60 +164,247 @@ export default function BrighterApp() {
     return () => clearInterval(id);
   }, []);
 
-  const yourPositions = useMemo(() => [
-    {
-      id: 'pos-1',
-      type: 'Deposit',
-      amount: 5600,
-      earnedUSD: 120.5,
-      earnedLighter: 0,
-      earnedBrighter: 0,
-    },
-    {
-      id: 'pos-2',
-      type: 'Staked',
-      amount: 1200,
-      earnedUSD: 45.2,
-      earnedLighter: 120,
-      earnedBrighter: 300,
-      unlockAt: Date.now() + 10 * 24 * 3600 * 1000, // 10 days from now
-    },
-    {
-      id: 'pos-3',
-      type: 'Staked',
-      amount: 800,
-      earnedUSD: 22.1,
-      earnedLighter: 80,
-      earnedBrighter: 200,
-      unlockAt: Date.now() - 2 * 24 * 3600 * 1000, // 2 days ago (unlocked)
-    },
-  ], []);
+  // Test Mode Functions
+  const handleTestDeposit = (amount: number, shouldStake: boolean) => {
+    console.log('handleTestDeposit called:', { amount, shouldStake, userBalance });
 
-  const pendingDeposits = useMemo(() => [
-    {
-      id: 'dep-1',
-      amount: 1000,
-      claimableAt: Date.now() + 2 * 3600 * 1000, // 2 hours from now
-    },
-    {
-      id: 'dep-2',
-      amount: 750,
-      claimableAt: Date.now() - 1 * 3600 * 1000, // 1 hour ago (claimable)
-    },
-  ], []);
+    if (amount > userBalance) {
+      alert('Insufficient balance!');
+      return;
+    }
 
-  const pendingWithdrawals = useMemo(() => [
-    {
-      id: 'wd-1',
-      amount: 300,
-      claimableAt: Date.now() + 1 * 24 * 3600 * 1000, // T+1
-    },
-    {
-      id: 'wd-2',
-      amount: 500,
-      claimableAt: Date.now() - 2 * 3600 * 1000, // 2 hours ago
-    },
-  ], []);
+    // Show loading modal first
+    setShowLoadingModal(true);
+
+    // After 0.5 seconds, show success modal
+    setTimeout(() => {
+      setShowLoadingModal(false);
+      setUserBalance(prev => prev - amount);
+
+      if (shouldStake) {
+        console.log('Creating staked position and showing stake modal');
+        // Create staked position
+        const newPosition = {
+          id: `test-stake-${Date.now()}`,
+          type: 'Staked' as const,
+          amount,
+          earnedUSD: 0,
+          earnedLighter: 0,
+          earnedBrighter: 0,
+          unlockAt: Date.now() + stakeDurationMs[stakePeriod],
+        };
+        setTestPositions(prev => [...prev, newPosition]);
+
+        // Show success modal for stake
+        setSuccessModalData({
+          type: 'stake',
+          amount,
+        });
+        setShowSuccessModal(true);
+        console.log('Modal state set to true for stake');
+      } else {
+        // Create pending deposit first
+        const claimableAt = Date.now() + 24 * 3600 * 1000; // 24 hours from now
+        const newPendingDeposit = {
+          id: `test-pending-deposit-${Date.now()}`,
+          amount,
+          claimableAt,
+        };
+        setTestPendingDeposits(prev => [...prev, newPendingDeposit]);
+
+        // Show success modal for deposit
+        setSuccessModalData({
+          type: 'deposit',
+          amount,
+          claimableAt,
+        });
+        setShowSuccessModal(true);
+      }
+
+      setLlpDeposit('');
+      setStakeAmount('');
+      setZapAmount('');
+    }, 500);
+  };
+
+  const handleTestClaim = (type: 'deposit' | 'withdrawal', id: string) => {
+    if (type === 'deposit') {
+      const deposit = testPendingDeposits.find(d => d.id === id);
+      if (!deposit) return;
+
+      // Move to positions
+      const newPosition = {
+        id: `test-pos-${Date.now()}`,
+        type: 'Deposit' as const,
+        amount: deposit.amount,
+        earnedUSD: 0,
+        earnedLighter: 0,
+        earnedBrighter: 0,
+      };
+      setTestPositions(prev => [...prev, newPosition]);
+      setTestPendingDeposits(prev => prev.filter(d => d.id !== id));
+    } else {
+      const withdrawal = testPendingWithdrawals.find(w => w.id === id);
+      if (!withdrawal) return;
+
+      // Return to balance
+      setUserBalance(prev => prev + withdrawal.amount * 1.006);
+      setTestPendingWithdrawals(prev => prev.filter(w => w.id !== id));
+    }
+  };
+
+  const handleTestWithdraw = (amount: number) => {
+    // Calculate total deposited amount from all Deposit positions
+    const currentTotalDeposited = testPositions
+      .filter(p => p.type === 'Deposit')
+      .reduce((sum, p) => sum + p.amount, 0);
+
+    if (currentTotalDeposited < amount) {
+      alert('Insufficient deposited amount!');
+      return;
+    }
+
+    // Show loading modal first
+    setShowLoadingModal(true);
+
+    // After 0.5 seconds, show success modal
+    setTimeout(() => {
+      setShowLoadingModal(false);
+
+      // Reduce deposit positions proportionally, starting from the first one
+      let remainingToWithdraw = amount;
+      setTestPositions(prev => prev.map(p => {
+        if (p.type === 'Deposit' && remainingToWithdraw > 0) {
+          const withdrawFromThis = Math.min(p.amount, remainingToWithdraw);
+          remainingToWithdraw -= withdrawFromThis;
+          const newAmount = p.amount - withdrawFromThis;
+          if (newAmount <= 0) {
+            return null;
+          }
+          return { ...p, amount: newAmount };
+        }
+        return p;
+      }).filter(Boolean) as typeof testPositions);
+
+      // Create pending withdrawal
+      const claimableAt = Date.now() + 24 * 3600 * 1000; // T+1
+      const newPendingWithdrawal = {
+        id: `test-wd-${Date.now()}`,
+        amount,
+        claimableAt,
+      };
+      setTestPendingWithdrawals(prev => [...prev, newPendingWithdrawal]);
+
+      setWithdrawAmount('');
+
+      // Show success modal for withdraw
+      setSuccessModalData({
+        type: 'withdraw',
+        amount,
+        claimableAt,
+      });
+      setShowSuccessModal(true);
+    }, 500);
+  };
+
+  const handleTestUnstake = (positionId: string) => {
+    const position = testPositions.find(p => p.id === positionId && p.type === 'Staked');
+    if (!position) return;
+
+    // Remove staked position
+    setTestPositions(prev => prev.filter(p => p.id !== positionId));
+
+    // Create pending withdrawal
+    const newPendingWithdrawal = {
+      id: `test-unstake-${Date.now()}`,
+      amount: position.amount,
+      claimableAt: Date.now() + 24 * 3600 * 1000, // T+1
+    };
+    setTestPendingWithdrawals(prev => [...prev, newPendingWithdrawal]);
+  };
+
+  const yourPositions = useMemo(() => {
+    if (isTestMode) {
+      return testPositions;
+    }
+    return [
+      {
+        id: 'pos-1',
+        type: 'Deposit' as const,
+        amount: 5600,
+        earnedUSD: 120.5,
+        earnedLighter: 0,
+        earnedBrighter: 0,
+      },
+      {
+        id: 'pos-2',
+        type: 'Staked' as const,
+        amount: 1200,
+        earnedUSD: 45.2,
+        earnedLighter: 120,
+        earnedBrighter: 300,
+        unlockAt: Date.now() + 10 * 24 * 3600 * 1000, // 10 days from now
+      },
+      {
+        id: 'pos-3',
+        type: 'Staked' as const,
+        amount: 800,
+        earnedUSD: 22.1,
+        earnedLighter: 80,
+        earnedBrighter: 200,
+        unlockAt: Date.now() - 2 * 24 * 3600 * 1000, // 2 days ago (unlocked)
+      },
+    ];
+  }, [isTestMode, testPositions]);
+
+  const pendingDeposits = useMemo(() => {
+    if (isTestMode) {
+      return testPendingDeposits;
+    }
+    return [
+      {
+        id: 'dep-1',
+        amount: 1000,
+        claimableAt: Date.now() + 2 * 3600 * 1000, // 2 hours from now
+      },
+      {
+        id: 'dep-2',
+        amount: 750,
+        claimableAt: Date.now() - 1 * 3600 * 1000, // 1 hour ago (claimable)
+      },
+    ];
+  }, [isTestMode, testPendingDeposits]);
+
+  const pendingWithdrawals = useMemo(() => {
+    if (isTestMode) {
+      return testPendingWithdrawals;
+    }
+    return [
+      {
+        id: 'wd-1',
+        amount: 300,
+        claimableAt: Date.now() + 1 * 24 * 3600 * 1000, // T+1
+      },
+      {
+        id: 'wd-2',
+        amount: 500,
+        claimableAt: Date.now() - 2 * 3600 * 1000, // 2 hours ago
+      },
+    ];
+  }, [isTestMode, testPendingWithdrawals]);
+
+  const totalDepositedAmount = useMemo(() => {
+    return yourPositions
+      .filter(pos => pos.type === 'Deposit')
+      .reduce((sum, pos) => sum + pos.amount, 0);
+  }, [yourPositions]);
+
+  const totalSUSDbAmount = useMemo(() => {
+    // sUSDb is obtained from staked positions (Deposit type positions that have been claimed)
+    // In test mode, it's the total amount of Deposit positions
+    // In production, sUSDb balance would come from claimed deposits
+    return totalDepositedAmount;
+  }, [totalDepositedAmount]);
 
   const lifetimeEarnings = useMemo(() => {
     return yourPositions.reduce(
@@ -209,26 +451,26 @@ export default function BrighterApp() {
       time: "2025-12-09 14:22:33",
       action: "Deposit",
       amount: "2,000 USDC",
-      receive: "1,960 USDL",
+      receive: "1,960 USDb",
       tx: "0x91e...6cQ27",
     },
     {
       time: "2025-12-08 11:15:22",
       action: "Request Withdraw",
-      amount: "850 USDL",
+      amount: "850 USDb",
       tx: "0x7af...d14b1",
     },
     {
       time: "2025-12-07 09:30:10",
       action: "Withdraw",
       amount: "1,200 USDC",
-      burn: "1,150 USDL",
+      burn: "1,150 USDb",
       tx: "0x4c1...0a9cd",
     },
     {
       time: "2025-12-06 16:45:18",
       action: "Stake",
-      amount: "1,500 USDL",
+      amount: "1,500 USDb",
       tx: "0xab3...8f2c4",
     },
     {
@@ -241,26 +483,26 @@ export default function BrighterApp() {
       time: "2025-12-04 10:30:42",
       action: "Deposit",
       amount: "1,800 USDC",
-      receive: "1,764 USDL",
+      receive: "1,764 USDb",
       tx: "0x6fa...2bd84",
     },
     {
       time: "2025-12-03 15:22:18",
       action: "Request Withdraw",
-      amount: "1,100 USDL",
+      amount: "1,100 USDb",
       tx: "0x9ed...4fb22",
     },
     {
       time: "2025-12-02 08:45:33",
       action: "Withdraw",
       amount: "880 USDC",
-      burn: "850 USDL",
+      burn: "850 USDb",
       tx: "0x2af...8cc03",
     },
     {
       time: "2025-12-01 12:10:05",
       action: "Stake",
-      amount: "2,100 USDL",
+      amount: "2,100 USDb",
       tx: "0x8de...5cf91",
     },
     {
@@ -585,18 +827,16 @@ export default function BrighterApp() {
                   </div>
 
                   <div className="grid gap-5 md:grid-cols-3">
-                    <HoverAmountCard
+                    <AmountCard
                       label="Total deposited"
                       amount={totalDeposited}
                     />
-                    <HoverAmountCard
+                    <AmountCard
                       label="Total staked"
                       amount={yourDeposited}
                     />
                     <div
                       className="relative border border-white/10 bg-slate-800 px-4 py-3"
-                      onMouseEnter={() => setAprHover(true)}
-                      onMouseLeave={() => setAprHover(false)}
                     >
                       <p className="text-xs uppercase tracking-[-0.06em] text-gray-500 font-mono">
                         APR
@@ -604,18 +844,10 @@ export default function BrighterApp() {
                       <p className="text-2xl font-semibold text-white font-mono">
                         {headlineApr}
                       </p>
-                      {aprHover && (
-                        <div className="absolute right-0 top-16 z-20 w-64 border border-white/20 bg-[#0a0a1f] p-3 text-xs text-white font-mono">
-                          <div className="flex items-center justify-between">
-                            <span>LLP_YIELD</span>
-                            <span className="text-gray-400">35%</span>
-                          </div>
-                        </div>
-                      )}
                     </div>
                   </div>
                   {/* NAV Chart */}
-                  <APRHistoryCard
+                  <PerformanceChart
                     data={usdlPriceSeries}
                     range={priceRange}
                     onRangeChange={setPriceRange}
@@ -642,7 +874,7 @@ export default function BrighterApp() {
                               setDepositMode(mode as "deposit" | "withdraw" | "stake")
                             }
                           >
-                            {mode === "deposit" ? "DEPOSIT" : mode === "withdraw" ? "WITHDRAW" : "STAKE"}
+                            {mode === "deposit" ? "STAKE" : mode === "withdraw" ? "WITHDRAW" : "LOCK"}
                           </button>
                         );
                       })}
@@ -698,14 +930,16 @@ export default function BrighterApp() {
                       <div className="space-y-3">
                         <div className="flex items-center justify-between text-sm text-white font-mono">
                           <label className="font-medium uppercase tracking-wider">{'>'} Deposit</label>
-                          <span className="text-gray-500 text-xs">BALANCE: 12,000 USDC</span>
+                          <span className="text-gray-500 text-xs">
+                            BALANCE: {isTestMode ? `${userBalance.toLocaleString()}` : '12,000'} USDC
+                          </span>
                         </div>
                         <div className="relative">
                           <input
                             value={zapAmount}
                             onChange={(e) => setZapAmount(e.target.value)}
                             className="w-full border border-white/20 bg-slate-800 px-5 py-5 pr-32 text-3xl font-mono text-white focus:border-white/40 focus:outline-none"
-                            placeholder="0.0"
+                            placeholder="0"
                           />
                           <div className="pointer-events-none absolute inset-y-0 right-4 flex items-center gap-2 text-base font-semibold text-white uppercase font-mono">
                             <img
@@ -721,7 +955,7 @@ export default function BrighterApp() {
                       <div className="space-y-4 rounded border border-white/10 bg-gradient-to-br from-slate-900 via-slate-950 to-slate-900 p-4">
                         <div className="flex items-center justify-between">
                           <span className="font-medium text-white uppercase tracking-wider font-mono">
-                            Stake to earn extra <span className="text-cyan-300">Lighter</span> & <span className="text-cyan-300">Brighter</span> points
+                            Lock to earn extra <br/><span className="text-cyan-300">Lighter</span> & <span className="text-cyan-300">Brighter</span> points
                           </span>
                           <button
                             onClick={() => setStakeOnDeposit(!stakeOnDeposit)}
@@ -766,7 +1000,7 @@ export default function BrighterApp() {
                             </div>
                             <div className="mt-4 pt-4 border-t border-white/10 text-sm space-y-2">
                                 <div className="flex justify-between text-slate-300">
-                                    <span>Lighter Points Boost</span>
+                                    <span>Points Boost</span>
                                     <span className="font-mono text-cyan-300">
                                       {({ "30d": "1x", "90d": "2x", "180d": "3x", "365d": "4x" }[stakePeriod])}
                                     </span>
@@ -809,25 +1043,34 @@ export default function BrighterApp() {
                           ) : (
                             <>
                               <div className="flex items-center justify-between text-sm">
-                                <span className="text-gray-400 flex items-center gap-1">
-                                  You can claim sUSDL after
-                                  <span className="inline-flex items-center justify-center w-4 h-4 text-xs border border-gray-400 rounded-full">?</span>
+                                <span className="text-gray-400 flex items-center gap-1 group relative">
+                                  You can claim sUSDb after
+                                  <span className="inline-flex items-center justify-center w-4 h-4 text-xs border border-gray-400 rounded-full cursor-help">?</span>
+                                  <span className="absolute bottom-full left-0 mb-2 hidden group-hover:block w-64 bg-black border border-white/20 px-3 py-2 text-xs text-white rounded z-10">
+                                    sUSDb is your receipt token representing your position.
+                                  </span>
                                 </span>
                                 <span className="text-gray-300 font-mono">
                                   12/20/2025, 16:00 PM
                                 </span>
                               </div>
                               <div className="flex items-center justify-between text-sm">
-                                <span className="text-gray-400 flex items-center gap-1">
+                                <span className="text-gray-400 flex items-center gap-1 group relative">
                                   Performance fee
-                                  <span className="inline-flex items-center justify-center w-4 h-4 text-xs border border-gray-400 rounded-full">?</span>
+                                  <span className="inline-flex items-center justify-center w-4 h-4 text-xs border border-gray-400 rounded-full cursor-help">?</span>
+                                  <span className="absolute bottom-full left-0 mb-2 hidden group-hover:block w-80 bg-black border border-white/20 px-3 py-2 text-xs text-white rounded z-10">
+                                    Brighter takes 10% of profits only — never your principal. The APR shown is already net of this fee.
+                                  </span>
                                 </span>
                                 <span className="text-gray-300 font-mono">10%</span>
                               </div>
                               <div className="flex items-center justify-between text-sm">
-                                <span className="text-gray-400 flex items-center gap-1">
+                                <span className="text-gray-400 flex items-center gap-1 group relative">
                                   Withdrawal period
-                                  <span className="inline-flex items-center justify-center w-4 h-4 text-xs border border-gray-400 rounded-full">?</span>
+                                  <span className="inline-flex items-center justify-center w-4 h-4 text-xs border border-gray-400 rounded-full cursor-help">?</span>
+                                  <span className="absolute bottom-full left-0 mb-2 hidden group-hover:block w-80 bg-black border border-white/20 px-3 py-2 text-xs text-white rounded z-10">
+                                    After you request a withdrawal, it takes up to 24 hours to process. You'll need to return to claim your USDC once it's ready.
+                                  </span>
                                 </span>
                                 <span className="text-cyan-400 font-mono">Less than 24 hours</span>
                               </div>
@@ -836,11 +1079,22 @@ export default function BrighterApp() {
                         </div>
                       </div>
 
-                      <button className="flex w-full items-center justify-center gap-2 bg-indigo-500 px-6 py-4 text-base font-bold text-white uppercase tracking-tight transition hover:bg-indigo-600 focus:outline-none font-mono">
+                      <button
+                        onClick={() => {
+                          if (isTestMode) {
+                            const amount = Number(zapAmount);
+                            if (amount > 0) {
+                              handleTestDeposit(amount, stakeOnDeposit);
+                            } else {
+                              alert('Please enter an amount');
+                            }
+                          }
+                        }}
+                        className="flex w-full items-center justify-center gap-2 bg-indigo-500 px-6 py-4 text-base font-bold text-white uppercase tracking-tight transition hover:bg-indigo-600 focus:outline-none font-mono">
                         <Zap className="h-5 w-5" />
                         {stakeOnDeposit
-                          ? `Stake USDC (Withdrawable at ${new Date(unlockAt).toLocaleDateString("en-US", { year: 'numeric', month: 'short', day: 'numeric' })})`
-                          : "Deposit USDC"}
+                          ? `Lock USDC (Withdrawable at ${new Date(unlockAt).toLocaleDateString("en-US", { year: 'numeric', month: 'short', day: 'numeric' })})`
+                          : "Stake USDC"}
                       </button>
                     </>
                   ) : depositMode === "withdraw" ? (
@@ -860,22 +1114,22 @@ export default function BrighterApp() {
                       <div className="space-y-3">
                         <div className="flex items-center justify-between text-sm text-white font-mono">
                           <label className="font-medium uppercase tracking-wider">{'>'} WITHDRAW_AMOUNT</label>
-                          <span className="text-gray-500 text-xs">Deposited: 5,600 USDL</span>
+                          <span className="text-gray-500 text-xs">Deposited: {totalDepositedAmount.toLocaleString()} USDb</span>
                         </div>
                         <div className="relative">
                           <input
                             value={withdrawAmount}
                             onChange={(e) => setWithdrawAmount(e.target.value)}
                             className="w-full border border-white/20 bg-slate-800 px-5 py-5 pr-32 text-3xl font-mono text-white focus:border-white/40 focus:outline-none"
-                            placeholder="0.0"
+                            placeholder="0"
                           />
                           <div className="pointer-events-none absolute inset-y-0 right-4 flex items-center gap-2 text-base font-semibold text-white uppercase font-mono">
                             <img
                               src={usdlLogo}
-                              alt="USDL"
+                              alt="USDb"
                               className="h-9 w-9 opacity-70 rounded-full"
                             />
-                            USDL
+                            USDb
                           </div>
                         </div>
                       </div>
@@ -904,41 +1158,52 @@ export default function BrighterApp() {
                         </div>
                       </div>
 
-                      <button className="flex w-full items-center justify-center gap-2 border border-gray-500/50 bg-gray-500/10 px-6 py-4 text-base font-bold text-gray-300 uppercase tracking-[0.2em] transition hover:bg-gray-500/20 hover:border-gray-400 focus:outline-none font-mono">
+                      <button
+                        onClick={() => {
+                          if (isTestMode) {
+                            const amount = Number(withdrawAmount);
+                            if (amount > 0) {
+                              handleTestWithdraw(amount);
+                            }
+                          }
+                        }}
+                        className="flex w-full items-center justify-center gap-2 border border-gray-500/50 bg-gray-500/10 px-6 py-4 text-base font-bold text-gray-300 uppercase tracking-[0.2em] transition hover:bg-gray-500/20 hover:border-gray-400 focus:outline-none font-mono">
                         <Zap className="h-5 w-5" />
                         REQUEST WITHDRAW
                       </button>
                     </>
                   ) : depositMode === "stake" ? (
                     <>
-                      {/* USDL Amount Input */}
+                      {/* sUSDb Amount Input */}
                       <div className="space-y-3">
                         <div className="flex items-center justify-between text-sm text-white font-mono">
-                          <label className="font-medium uppercase tracking-wider">{'>'} STAKE_AMOUNT</label>
-                          <span className="text-gray-500 text-xs">Balance: 5,600 USDL</span>
+                          <label className="font-medium uppercase tracking-wider">{'>'} LOCK_AMOUNT</label>
+                          <span className="text-gray-500 text-xs">
+                            Balance: {isTestMode ? `${totalSUSDbAmount.toLocaleString()}` : '5,600'} sUSDb
+                          </span>
                         </div>
                         <div className="relative">
                           <input
                             value={stakeAmount}
                             onChange={(e) => setStakeAmount(e.target.value)}
                             className="w-full border border-white/20 bg-slate-800 px-5 py-5 pr-32 text-3xl font-mono text-white focus:border-white/40 focus:outline-none"
-                            placeholder="0.0"
+                            placeholder="0"
                           />
                           <div className="pointer-events-none absolute inset-y-0 right-4 flex items-center gap-2 text-base font-semibold text-white uppercase font-mono">
                             <img
                               src={usdlLogo}
-                              alt="USDL"
+                              alt="sUSDb"
                               className="h-9 w-9 opacity-70 rounded-full"
                             />
-                            USDL
+                            sUSDb
                           </div>
                         </div>
                       </div>
 
-                      {/* Stake Period */}
+                      {/* Lock Period */}
                       <div className="space-y-3">
                         <label className="text-xs text-gray-400 font-mono uppercase">
-                          Stake period (longer = higher boost)
+                          Lock period (longer = higher boost)
                         </label>
                         <div className="grid grid-cols-4 gap-3">
                           {(["30d", "90d", "180d", "365d"] as const).map((period) => {
@@ -993,10 +1258,19 @@ export default function BrighterApp() {
                         </div>
                       </div>
 
-                      {/* Stake Button */}
-                      <button className="flex w-full items-center justify-center gap-2 bg-indigo-500 px-6 py-4 text-base font-bold text-white uppercase tracking-tight transition hover:bg-indigo-600 focus:outline-none font-mono">
+                      {/* Lock Button */}
+                      <button
+                        onClick={() => {
+                          if (isTestMode) {
+                            const amount = Number(stakeAmount);
+                            if (amount > 0) {
+                              handleTestDeposit(amount, true);
+                            }
+                          }
+                        }}
+                        className="flex w-full items-center justify-center gap-2 bg-indigo-500 px-6 py-4 text-base font-bold text-white uppercase tracking-tight transition hover:bg-indigo-600 focus:outline-none font-mono">
                         <Zap className="h-5 w-5" />
-                        STAKE USDL
+                        LOCK sUSDb
                       </button>
                     </>
                   ) : null}
@@ -1005,17 +1279,18 @@ export default function BrighterApp() {
               </div>
 
               {/* Your Positions - outside the grid, full width */}
-              <div className="mt-6 space-y-4">
+              <div id="your-positions" className="mt-6 space-y-4">
                 <div className="flex items-center justify-between">
                   <h3 className="text-lg font-semibold text-white uppercase tracking-wider font-mono border-l-4 border-cyan-400 pl-3">
                     {'>'} Your Positions
                   </h3>
-                  <button
+                  {/* TX_HISTORY_LOG button hidden for now */}
+                  {/* <button
                     onClick={() => setShowTxHistory(true)}
                     className="flex items-center gap-2 border border-green-500/50 bg-green-500/10 px-3 py-1.5 text-xs font-bold text-green-300 uppercase tracking-wider transition hover:bg-green-500/20 hover:border-green-400 focus:outline-none"
                   >
                     TX_HISTORY_LOG
-                  </button>
+                  </button> */}
                 </div>
 
                   <div className="inline-flex items-center gap-2 border border-white/10 bg-[#0a0a1f] p-1 text-sm text-white font-mono">
@@ -1029,132 +1304,202 @@ export default function BrighterApp() {
                         }`}
                         onClick={() => setYourPositionsTab(tab)}
                       >
-                        {tab}
+                        {tab === 'Deposit' ? 'Staked' : 'Locked'}
                       </button>
                     ))}
                   </div>
                   
                   <div className="space-y-3">
-                    {yourPositions
-                      .filter((pos) => pos.type === yourPositionsTab)
-                      .map((pos) => (
-                      <div key={pos.id} className="border border-white/10 bg-slate-800 p-4 rounded-lg">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <span className={`text-sm font-bold uppercase px-2 py-1 border ${
-                              pos.type === 'Staked'
-                                ? 'text-cyan-300 border-cyan-300/50 bg-cyan-500/10'
-                                : 'text-indigo-300 border-indigo-300/50 bg-indigo-500/10'
-                            }`}>
-                              {pos.type === 'Deposit' ? 'You Deposited' : pos.type}
-                            </span>
-                            <div className="font-mono text-white text-lg">
-                              {pos.amount.toLocaleString()} {pos.type === 'Deposit' ? 'USDC' : 'USDL'}
+                    {/* Show total for Deposit tab - always show if there are any deposits or pending deposits */}
+                    {yourPositionsTab === 'Deposit' && (totalDepositedAmount > 0 || pendingDeposits.length > 0) && (
+                      <div className="border border-white/10 bg-slate-800 p-6 rounded-lg">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <div className="text-sm text-gray-400 mb-2">
+                              You Staked
+                            </div>
+                            <div className="font-mono text-white text-3xl font-bold">
+                              {totalDepositedAmount.toLocaleString()} USDC
                             </div>
                           </div>
-                          {pos.type === 'Staked' && pos.unlockAt && (
-                            <div className="flex items-center gap-3">
-                              <div className="text-xs text-slate-400">
-                                Unlock at: {new Date(pos.unlockAt).toLocaleString()}
-                              </div>
-                              <button
-                                disabled={nowTs < pos.unlockAt}
-                                className={`px-4 py-2 text-xs font-semibold transition ${
-                                  nowTs >= pos.unlockAt
-                                    ? "bg-green-500/20 text-green-300 border border-green-500/50 hover:bg-green-500/30 cursor-pointer"
-                                    : "cursor-not-allowed bg-white/5 text-slate-500 border border-white/10"
-                                }`}
-                              >
-                                Claim
-                              </button>
-                            </div>
-                          )}
-                          {pos.type === 'Deposit' && (
-                            <div className="text-sm font-semibold text-green-400 font-mono">
-                              Earning APR {headlineApr}
+                          {totalDepositedAmount > 0 && (
+                            <div className="flex items-center gap-2 text-green-400 font-mono">
+                              <Sparkles className="h-4 w-4" />
+                              <span className="text-sm">Earning {headlineApr} APR</span>
                             </div>
                           )}
                         </div>
-                        {pos.type === 'Deposit' && (
-                          <>
-                            {pendingDeposits.length > 0 && (
-                              <div className="mt-4 pt-4 border-t border-white/20 space-y-3">
-                                <h4 className="text-sm font-semibold text-white uppercase tracking-wider font-mono">
-                                  Pending Deposits
-                                </h4>
-                                {pendingDeposits.map((deposit) => {
-                                  const isClaimable = nowTs >= deposit.claimableAt;
-                                  const claimableDate = new Date(deposit.claimableAt);
-                                  const formattedDate = `${claimableDate.getMonth() + 1}/${claimableDate.getDate()}/${claimableDate.getFullYear()}, ${claimableDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
-                                  return (
-                                    <div key={deposit.id} className="flex items-center justify-between border border-white/10 bg-slate-900 p-3 rounded">
-                                      <div className="flex items-center gap-3">
-                                        <span className="text-sm font-bold uppercase px-2 py-1 border text-cyan-300 border-cyan-300/50 bg-cyan-500/10">
-                                          Pending Deposit
-                                        </span>
-                                        <div className="font-mono text-white text-lg">
-                                          {deposit.amount.toLocaleString()} USDC
-                                        </div>
-                                      </div>
-                                      <button
-                                        disabled={!isClaimable}
-                                        className={`px-4 py-2 text-xs font-semibold transition ${
-                                          isClaimable
-                                            ? "bg-indigo-500/20 text-indigo-300 border border-indigo-500/50 hover:bg-indigo-500/30"
-                                            : "cursor-not-allowed bg-white/5 text-slate-500 border border-white/10"
-                                        }`}
-                                      >
-                                        {isClaimable
-                                          ? `Claim ${(deposit.amount * 0.9987).toFixed(1)} sBLUSD`
-                                          : `sUSDL Claimable at ${formattedDate}`
-                                        }
-                                      </button>
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            )}
-                            {pendingWithdrawals.length > 0 && (
-                              <div className="mt-4 pt-4 border-t border-white/20 space-y-3">
-                                <h4 className="text-sm font-semibold text-white uppercase tracking-wider font-mono">
-                                  Pending Withdrawals
-                                </h4>
-                                {pendingWithdrawals.map((withdrawal) => {
-                                  const isClaimable = nowTs >= withdrawal.claimableAt;
-                                  const claimableDate = new Date(withdrawal.claimableAt);
-                                  const formattedDate = `${claimableDate.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' })}, ${claimableDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })}`;
-                                  return (
-                                    <div key={withdrawal.id} className="flex items-center justify-between border border-white/10 bg-slate-900 p-3 rounded">
-                                      <div className="flex items-center gap-3">
-                                        <span className="text-sm font-bold uppercase px-2 py-1 border text-orange-300 border-orange-300/50 bg-orange-500/10">
-                                          Pending Withdrawal
-                                        </span>
-                                        <div className="font-mono text-white text-lg">
-                                          {withdrawal.amount.toLocaleString()} sUSDL
-                                        </div>
-                                      </div>
-                                      <button
-                                        disabled={!isClaimable}
-                                        className={`px-4 py-2 text-xs font-semibold transition ${
-                                          isClaimable
-                                            ? "bg-indigo-500/20 text-indigo-300 border border-indigo-500/50 hover:bg-indigo-500/30"
-                                            : "cursor-not-allowed bg-white/5 text-slate-500 border border-white/10"
-                                        }`}
-                                      >
-                                        {isClaimable
-                                          ? `Claim ${(withdrawal.amount * 1.006).toFixed(1)} USDC`
-                                          : `USDC Claimable at ${formattedDate}`
-                                        }
-                                      </button>
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            )}
-                          </>
-                        )}
                       </div>
-                    ))}
+                    )}
+
+                    {/* Show individual Locked positions */}
+                    {yourPositionsTab === 'Staked' && yourPositions
+                      .filter((pos) => pos.type === 'Staked')
+                      .map((pos) => {
+                        // Calculate locked days from unlock time
+                        const lockedDays = pos.unlockAt ? Math.round((pos.unlockAt - Date.now()) / (24 * 3600 * 1000)) : 0;
+
+                        return (
+                          <div key={pos.id} className="border border-white/10 bg-slate-800 p-6 rounded-lg">
+                            {/* Header with title and APR */}
+                            <div className="flex items-start justify-between mb-6">
+                              <div className="text-base text-gray-400">
+                                You Locked
+                              </div>
+                              <div className="flex items-center gap-2 text-green-400 font-mono text-sm">
+                                <Sparkles className="h-4 w-4" />
+                                <span>Earning {headlineApr} APR</span>
+                              </div>
+                            </div>
+
+                            {/* Main amount */}
+                            <div className="font-mono text-white text-5xl font-bold mb-8">
+                              {pos.amount.toLocaleString()} USDC
+                            </div>
+
+                            {/* Lock details section - card style */}
+                            <div className="bg-slate-900/50 p-6 rounded-lg mb-6">
+                              <div className="flex items-center justify-between mb-4">
+                                <div className="text-sm text-blue-300">
+                                  Locked for {Math.abs(lockedDays)} days
+                                </div>
+                                {pos.unlockAt && (
+                                  <div className="text-xs text-slate-400 border border-white/20 px-4 py-2 rounded">
+                                    Claimable at {new Date(pos.unlockAt).toLocaleString('en-US', {
+                                      month: '2-digit',
+                                      day: '2-digit',
+                                      year: 'numeric',
+                                      hour: '2-digit',
+                                      minute: '2-digit',
+                                      hour12: true
+                                    })}
+                                  </div>
+                                )}
+                              </div>
+
+                              <div className="font-mono text-white text-2xl font-semibold mb-6">
+                                {pos.amount.toLocaleString()} sUSDb
+                              </div>
+
+                              {/* Earned Points */}
+                              <div className="grid grid-cols-2 gap-8">
+                                <div>
+                                  <div className="text-sm text-gray-400 mb-2 flex items-center gap-1">
+                                    <span>Earned Lighter Points</span>
+                                    <Zap className="h-3 w-3" />
+                                  </div>
+                                  <div className="font-mono text-green-400 text-3xl font-bold">
+                                    {pos.earnedLighter?.toLocaleString() || '0'}
+                                  </div>
+                                </div>
+                                <div>
+                                  <div className="text-sm text-gray-400 mb-2 flex items-center gap-1">
+                                    <span>Earned Brighter Points</span>
+                                    <span className="text-orange-400">⚡</span>
+                                  </div>
+                                  <div className="font-mono text-green-400 text-3xl font-bold">
+                                    {pos.earnedBrighter?.toLocaleString() || '0'}
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Claim button - only show if position has unlockAt and is claimable */}
+                            {pos.unlockAt && nowTs >= pos.unlockAt && (
+                              <div className="mt-6 flex justify-end">
+                                <button
+                                  onClick={() => {
+                                    if (isTestMode) {
+                                      handleTestUnstake(pos.id);
+                                    }
+                                  }}
+                                  className="px-6 py-2 text-sm font-semibold rounded bg-blue-500/20 text-blue-300 border border-blue-500/50 hover:bg-blue-500/30 cursor-pointer transition"
+                                >
+                                  Claim
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+
+                    {/* Pending Deposits - shown in Deposit tab */}
+                    {yourPositionsTab === 'Deposit' && pendingDeposits.length > 0 && (
+                      <div className="space-y-3">
+                        {pendingDeposits.map((deposit) => {
+                          const isClaimable = nowTs >= deposit.claimableAt;
+                          const claimableDate = new Date(deposit.claimableAt);
+                          const formattedDate = `${claimableDate.getMonth() + 1}/${claimableDate.getDate()}/${claimableDate.getFullYear()}, ${claimableDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+                          return (
+                            <div key={deposit.id} className="flex items-center justify-between bg-slate-900/50 p-4 rounded border border-white/10">
+                              <div>
+                                <div className="text-sm text-orange-300 mb-1">Pending Stake</div>
+                                <div className="font-mono text-white text-lg font-semibold">
+                                  {deposit.amount.toLocaleString()} USDC
+                                </div>
+                              </div>
+                              <button
+                                disabled={!isClaimable}
+                                onClick={() => {
+                                  if (isTestMode && isClaimable) {
+                                    handleTestClaim('deposit', deposit.id);
+                                  }
+                                }}
+                                className={`px-4 py-2 text-xs font-semibold transition border rounded ${
+                                  isClaimable
+                                    ? "bg-indigo-500/20 text-indigo-300 border-indigo-500/50 hover:bg-indigo-500/30 cursor-pointer"
+                                    : "cursor-not-allowed bg-slate-700/30 text-slate-400 border-slate-600"
+                                }`}
+                              >
+                                {isClaimable
+                                  ? `Claim ${(deposit.amount * 0.9987).toFixed(1)} sUSDb`
+                                  : `sUSDb Claimable at ${formattedDate}`
+                                }
+                              </button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {/* Pending Withdrawals - shown in Deposit tab */}
+                    {yourPositionsTab === 'Deposit' && pendingWithdrawals.length > 0 && (
+                      <div className="space-y-3">
+                        {pendingWithdrawals.map((withdrawal) => {
+                          const isClaimable = nowTs >= withdrawal.claimableAt;
+                          const claimableDate = new Date(withdrawal.claimableAt);
+                          const formattedDate = `${claimableDate.toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' })}, ${claimableDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true })}`;
+                          return (
+                            <div key={withdrawal.id} className="flex items-center justify-between bg-slate-900/50 p-4 rounded border border-white/10">
+                              <div>
+                                <div className="text-sm text-yellow-300 mb-1">{isClaimable ? 'Withdrawable' : 'Pending Withdrawal'}</div>
+                                <div className="font-mono text-white text-lg font-semibold">
+                                  {withdrawal.amount.toLocaleString()} sUSDb
+                                </div>
+                              </div>
+                              <button
+                                disabled={!isClaimable}
+                                onClick={() => {
+                                  if (isTestMode && isClaimable) {
+                                    handleTestClaim('withdrawal', withdrawal.id);
+                                  }
+                                }}
+                                className={`px-4 py-2 text-xs font-semibold transition border rounded ${
+                                  isClaimable
+                                    ? "bg-indigo-500/20 text-indigo-300 border-indigo-500/50 hover:bg-indigo-500/30 cursor-pointer"
+                                    : "cursor-not-allowed bg-slate-700/30 text-slate-400 border-slate-600"
+                                }`}
+                              >
+                                {isClaimable
+                                  ? `Claim ${(withdrawal.amount * 1.006).toFixed(1)} USDC`
+                                  : `USDC Claimable at ${formattedDate}`
+                                }
+                              </button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -1235,7 +1580,7 @@ export default function BrighterApp() {
                                     <div className="flex items-center gap-2">
                                       <img
                                         src={usdlLogo}
-                                        alt="USDL"
+                                        alt="USDb"
                                         className="h-4 w-4 opacity-70 rounded-full"
                                       />
                                       <span>{'>'} RCV: {tx.receive}</span>
@@ -1245,7 +1590,7 @@ export default function BrighterApp() {
                                     <div className="flex items-center gap-2">
                                       <img
                                         src={usdlLogo}
-                                        alt="USDL"
+                                        alt="USDb"
                                         className="h-4 w-4 opacity-70 rounded-full"
                                       />
                                       <span>{'>'} BURN: {tx.burn}</span>
@@ -1414,6 +1759,157 @@ export default function BrighterApp() {
           })}
         </div>
       </nav>
+
+      {/* Floating Test Mode Button */}
+      <button
+        onClick={() => {
+          setIsTestMode(!isTestMode);
+          if (!isTestMode) {
+            setTestPositions([]);
+            setTestPendingDeposits([]);
+            setTestPendingWithdrawals([]);
+            setUserBalance(10000);
+          }
+        }}
+        className={`fixed bottom-6 right-6 z-50 flex items-center gap-2 px-6 py-4 rounded-full shadow-lg font-bold uppercase tracking-wider transition-all duration-300 ${
+          isTestMode
+            ? "bg-green-500 text-white hover:bg-green-600 shadow-green-500/50"
+            : "bg-indigo-500 text-white hover:bg-indigo-600 shadow-indigo-500/50"
+        }`}
+        title={isTestMode ? "Exit Test Mode" : "Enter Test Mode"}
+      >
+        <Sparkles className="h-5 w-5" />
+        {isTestMode ? "Test Mode ON" : "Test Mode"}
+      </button>
+
+      {/* Fast Forward Button - Make pending deposits claimable */}
+      {isTestMode && testPendingDeposits.length > 0 && (
+        <button
+          onClick={() => {
+            // Set all pending deposits' claimableAt to now
+            setTestPendingDeposits(prev => prev.map(deposit => ({
+              ...deposit,
+              claimableAt: Date.now() - 1000 // 1 second ago, so it's already claimable
+            })));
+          }}
+          className="fixed bottom-24 right-6 z-50 flex items-center gap-1.5 px-3 py-2 rounded-lg shadow-md text-xs font-semibold uppercase tracking-wide transition-all duration-300 bg-slate-700 text-slate-300 hover:bg-slate-600 hover:text-white border border-slate-600"
+          title="Make pending deposits claimable now"
+        >
+          <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+          </svg>
+          Fast Forward
+        </button>
+      )}
+
+      {/* Loading Modal */}
+      {showLoadingModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80">
+          <div className="bg-[#1a1a2e] border border-white/20 rounded-lg p-8 max-w-md w-full mx-4">
+            <div className="flex flex-col items-center justify-center space-y-4">
+              {/* Spinner */}
+              <div className="w-16 h-16 border-4 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin"></div>
+
+              {/* Loading Text */}
+              <div className="text-xl font-bold text-white uppercase tracking-wider">
+                Loading...
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Success Modal */}
+      {showSuccessModal && successModalData && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80" onClick={() => setShowSuccessModal(false)}>
+          <div className="bg-[#1a1a2e] border border-white/20 rounded-lg p-8 max-w-md w-full mx-4" onClick={(e) => e.stopPropagation()}>
+            {/* Check Icon */}
+            <div className="flex justify-center mb-6">
+              <div className="w-20 h-20 rounded-full bg-green-500/20 border-4 border-green-500 flex items-center justify-center">
+                <svg className="w-12 h-12 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+            </div>
+
+            {/* Title */}
+            <h2 className="text-2xl font-bold text-white text-center mb-2 uppercase tracking-wider">
+              {successModalData.type === 'deposit' ? 'You Staked' : successModalData.type === 'stake' ? 'You Locked' : 'Withdrawal Submitted'}
+            </h2>
+
+            {/* Amount */}
+            <div className="flex items-center justify-center gap-2 mb-6">
+              <span className="text-4xl font-bold text-white font-mono">
+                {successModalData.amount.toLocaleString()}
+              </span>
+              <img src={usdcLogo} alt={successModalData.type === 'withdraw' ? 'sUSDb' : 'USDC'} className="w-8 h-8 rounded-full" />
+              <span className="text-4xl font-bold text-white">{successModalData.type === 'withdraw' ? 'sUSDb' : 'USDC'}</span>
+            </div>
+
+            {/* Details */}
+            <div className="space-y-3 mb-6">
+              {successModalData.type === 'withdraw' && successModalData.claimableAt ? (
+                <div className="text-center text-sm text-gray-400">
+                  Your USDC claimable after<br/>
+                  <span className="text-white font-mono">
+                    {new Date(successModalData.claimableAt).toLocaleString('en-US', {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                      month: 'short',
+                      day: 'numeric',
+                      year: 'numeric'
+                    })}
+                  </span>
+                </div>
+              ) : (
+                <>
+                  <div className="text-center text-green-400 font-mono">
+                    Now earning 34.3% APR{successModalData.type === 'stake' ? '.' : ''}
+                  </div>
+                  {successModalData.type === 'stake' && (
+                    <div className="text-center text-green-400 font-mono">
+                      Plus Lighter & Brighter points
+                    </div>
+                  )}
+                  {successModalData.type === 'deposit' && successModalData.claimableAt && (
+                    <div className="text-center text-sm text-gray-400">
+                      You can claim sUSDb as received token at<br/>
+                      <span className="text-white font-mono">
+                        {new Date(successModalData.claimableAt).toLocaleString('en-US', {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                          month: 'short',
+                          day: 'numeric',
+                          year: 'numeric'
+                        })}
+                      </span>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+
+            {/* View Position Button */}
+            <button
+              onClick={() => {
+                setShowSuccessModal(false);
+                setYourPositionsTab(successModalData.type === 'stake' ? 'Staked' : 'Deposit');
+
+                // Scroll to Your Positions section
+                setTimeout(() => {
+                  const element = document.getElementById('your-positions');
+                  if (element) {
+                    element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  }
+                }, 100);
+              }}
+              className="w-full bg-indigo-500/30 hover:bg-indigo-500/40 text-indigo-200 border border-indigo-400/50 py-4 rounded font-bold uppercase tracking-wider transition"
+            >
+              View Position
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -1556,39 +2052,21 @@ function OverviewRow({
   );
 }
 
-function HoverAmountCard({ label, amount }: { label: string; amount: string }) {
-  const [hover, setHover] = useState(false);
-  const usdlEstimate = label.toLowerCase().includes("total")
-    ? "~ 128.4M USDL"
-    : "~ 12,400 USDL";
+function AmountCard({ label, amount }: { label: string; amount: string }) {
   return (
     <div
       className="relative border border-white/10 bg-slate-900 px-4 py-3"
-      onMouseEnter={() => setHover(true)}
-      onMouseLeave={() => setHover(false)}
     >
       <p className="text-xs uppercase tracking-[-0.06em] text-gray-500 font-mono">
         {label}
       </p>
       <p className="text-2xl font-semibold text-white font-mono">{amount}</p>
-      {hover && (
-        <div className="absolute left-0 top-full mt-2 w-48 border border-white/20 bg-[#0a0a1f] p-3 text-xs text-white font-mono z-20">
-          <div className="flex items-center gap-2">
-            <img
-              src={usdlLogo}
-              alt="USDL"
-              className="h-5 w-5 opacity-70 rounded-full"
-            />
-            <span className="text-gray-400">{usdlEstimate}</span>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
 
-function USDLPriceCard({
-  data,
+function PerformanceChart({
+  data: chartData,
   range,
   onRangeChange,
 }: {
@@ -1596,112 +2074,128 @@ function USDLPriceCard({
   range: "1W" | "1M" | "3M" | "1Y" | "ALL";
   onRangeChange: (value: "1W" | "1M" | "3M" | "1Y" | "ALL") => void;
 }) {
-  const rangedData = useMemo(() => {
-    const counts: Record<typeof range, number> = {
-      "1W": 7,
-      "1M": 20,
-      "3M": 40,
-      "1Y": data.length,
-      ALL: data.length,
-    };
-    const take = counts[range] ?? data.length;
-    return data.slice(-take);
-  }, [data, range]);
-
-  const svgWidth = 100;
-  const svgHeight = 80;
-  const points = useMemo(
-    () => buildPoints(rangedData, svgWidth, svgHeight),
-    [rangedData, svgWidth, svgHeight]
+  const labels = Array.from(
+    { length: chartData.length },
+    (_, i) => `2025-12-${(i + 1).toString().padStart(2, "0")}`
   );
-  const linePath = useMemo(() => buildLinePath(points), [points]);
-  const areaPath = useMemo(
-    () => buildAreaPath(points, svgWidth, svgHeight),
-    [points, svgWidth, svgHeight]
-  );
-  const [hoverPoint, setHoverPoint] = useState<{
-    x: number;
-    y: number;
-    value: number;
-    idx: number;
-    xPx?: number;
-    yPx?: number;
-  } | null>(null);
-  const display =
-    hoverPoint ??
-    (points.length
-      ? {
-          x: points[points.length - 1].x,
-          y: points[points.length - 1].y,
-          value: rangedData[rangedData.length - 1],
-          idx: points.length - 1,
-        }
-      : { x: 0, y: 0, value: 0, idx: 0 });
-  const svgRef = useRef<SVGSVGElement | null>(null);
 
-  const handleHover = (event: React.MouseEvent<SVGSVGElement, MouseEvent>) => {
-    if (!svgRef.current || !points.length) return;
-    const rect = svgRef.current.getBoundingClientRect();
-    const relX = ((event.clientX - rect.left) / rect.width) * svgWidth;
-    const clampedX = Math.max(0, Math.min(svgWidth, relX));
-
-    let idx = points.findIndex((p) => p.x >= clampedX);
-    if (idx === -1) idx = points.length - 1;
-    const prevIdx = Math.max(0, idx - 1);
-    const p0 = points[prevIdx];
-    const p1 = points[idx];
-    const v0 = rangedData[prevIdx] ?? rangedData[rangedData.length - 1] ?? 0;
-    const v1 = rangedData[idx] ?? v0;
-    const span = p1.x - p0.x || 1;
-    const t = Math.max(0, Math.min(1, (clampedX - p0.x) / span));
-    const interpY = p0.y + (p1.y - p0.y) * t;
-    const interpV = v0 + (v1 - v0) * t;
-
-    const parentRect = svgRef.current.parentElement?.getBoundingClientRect();
-    const xPx =
-      parentRect && rect
-        ? rect.left - parentRect.left + (clampedX / svgWidth) * rect.width
-        : undefined;
-    const yPx =
-      parentRect && rect
-        ? rect.top - parentRect.top + (interpY / svgHeight) * rect.height
-        : undefined;
-
-    setHoverPoint({
-      x: clampedX,
-      y: interpY,
-      value: interpV,
-      idx,
-      xPx,
-      yPx,
-    });
+  const data = {
+    labels,
+    datasets: [
+      {
+        label: "LLP Historic Performance",
+        data: chartData,
+        borderColor: "rgba(74, 222, 128, 1)",
+        borderWidth: 2,
+        pointRadius: 0,
+        pointHitRadius: 10,
+        fill: true,
+        backgroundColor: (context: any) => {
+          const ctx = context.chart.ctx;
+          const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+          gradient.addColorStop(0, "rgba(74, 222, 128, 0.4)");
+          gradient.addColorStop(1, "rgba(74, 222, 128, 0)");
+          return gradient;
+        },
+        tension: 0.4,
+      },
+    ],
   };
 
-  const handleLeave = () => {
-    setHoverPoint(null);
+  const options = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        display: false,
+      },
+      tooltip: {
+        enabled: true,
+        mode: "index" as const,
+        intersect: false,
+        position: "nearest" as const,
+        backgroundColor: "rgba(0,0,0,0.8)",
+        titleFont: { size: 12, weight: 'bold' as const, family: "monospace" },
+        bodyFont: { size: 12, family: "monospace" },
+        padding: 12,
+        caretPadding: 10,
+        displayColors: false,
+        callbacks: {
+          title: function (context: any) {
+            return `Date: ${context[0].label}`;
+          },
+          label: function (context: any) {
+            return `LLP Value: ${context.parsed.y}`;
+          },
+        },
+      },
+    },
+    scales: {
+      x: {
+        grid: {
+          display: false,
+        },
+        ticks: {
+          color: "rgba(255, 255, 255, 0.5)",
+          font: {
+            size: 10,
+            family: "monospace"
+          },
+          maxRotation: 0,
+          minRotation: 0,
+          autoSkip: true,
+          maxTicksLimit: 6,
+        },
+        title: {
+          display: true,
+          text: "Date",
+          color: "rgba(255, 255, 255, 0.8)",
+          font: {
+            size: 12,
+            family: "monospace"
+          },
+        },
+      },
+      y: {
+        grid: {
+          color: "rgba(255, 255, 255, 0.1)",
+          borderDash: [2, 2],
+        },
+        ticks: {
+          color: "rgba(255, 255, 255, 0.5)",
+          font: {
+            size: 10,
+            family: "monospace"
+          },
+        },
+        title: {
+          display: true,
+          text: "LLP value",
+          color: "rgba(255, 255, 255, 0.8)",
+          font: {
+            size: 12,
+            family: "monospace"
+          },
+        },
+      },
+    },
   };
 
   return (
-    <div className="space-y-4 border border-white/10 bg-[#0a0a1f] p-5">
-      <div className="flex flex-col gap-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-
-            <p className="text-sm font-semibold text-white uppercase tracking-wider font-mono">{'>'} USDL_PRICE</p>
-          </div>
-          <span className="text-sm font-semibold text-white font-mono">
-            1 USDL = {display.value.toFixed(3)} USDC
-          </span>
-        </div>
-        <div className="flex items-center gap-2 text-[11px]">
-          {["1W", "1M", "3M", "1Y", "ALL"].map((r) => (
+    <div className="space-y-4 border border-white/10 bg-[#0a0a1f] p-4">
+      <div className="flex items-center justify-between">
+        <p className="text-base font-bold text-white uppercase tracking-wider font-mono">
+          LLP Historic Performance <br/>(Net Asset Value)
+        </p>
+        <div className="flex items-center gap-1 border border-white/10 p-1 text-xs">
+          {(["1W", "1M", "3M", "1Y", "ALL"] as const).map((r) => (
             <button
               key={r}
-              onClick={() => onRangeChange(r as typeof range)}
-              className={`border border-white/20 px-2 py-1 font-mono uppercase ${
+              onClick={() => onRangeChange(r)}
+              className={`px-2 py-1 transition font-mono ${
                 range === r
                   ? "bg-white/10 text-white"
-                  : "bg-[#0a0a1f] text-gray-500 hover:text-white"
+                  : "text-gray-500 hover:bg-white/5"
               }`}
             >
               {r}
@@ -1709,356 +2203,17 @@ function USDLPriceCard({
           ))}
         </div>
       </div>
-      <div className="relative overflow-hidden border border-white/10 bg-[#0a0a1f] p-0">
-        <svg
-          ref={svgRef}
-          viewBox={`0 0 ${svgWidth} ${svgHeight}`}
-          preserveAspectRatio="none"
-          className="block h-48 w-full"
-          onMouseMove={handleHover}
-          onMouseLeave={handleLeave}
-        >
-          <defs>
-            <linearGradient id="usdlArea" x1="0" x2="0" y1="0" y2="1">
-              <stop offset="0%" stopColor="#22d3ee" stopOpacity="0.25" />
-              <stop offset="100%" stopColor="#22d3ee" stopOpacity="0" />
-            </linearGradient>
-          </defs>
-          <path d={areaPath} fill="url(#usdlArea)" />
-          <path
-            d={linePath}
-            fill="none"
-            stroke="#22d3ee"
-            strokeWidth="0.5"
-            strokeLinecap="round"
-          />
-          {points.length > 0 && (
-            <>
-              <line
-                x1={display.x}
-                x2={display.x}
-                y1={0}
-                y2={svgHeight}
-                stroke="#38bdf8"
-                strokeWidth="0.4"
-                strokeDasharray="2 2"
-                opacity={0.7}
-              />
-              <circle
-                cx={display.x}
-                cy={display.y}
-                r={1.8}
-                fill="#22d3ee"
-                stroke="#0ea5e9"
-                strokeWidth="0.6"
-              />
-            </>
-          )}
-          <rect
-            x={0}
-            y={0}
-            width={svgWidth}
-            height={svgHeight}
-            fill="transparent"
-          />
-        </svg>
-        {points.length > 0 && (
-          <>
-            <div className="pointer-events-none absolute right-4 top-4 border border-white/20 bg-[#0a0a1f] px-3 py-2 text-xs text-white font-mono">
-              <div className="flex items-center gap-2">
-                <span className="h-2 w-2 bg-indigo-400 border border-indigo-300" />
-                1 USDL = ${display.value.toFixed(3)} USDC
-              </div>
-              <div className="mt-1 text-[10px] text-gray-500 uppercase">
-                {'>'} POINT {display.idx + 1}/{points.length}
-              </div>
-            </div>
-            {hoverPoint && (
-              <div
-                className="pointer-events-none absolute border border-white/20 bg-[#0a0a1f] px-2 py-1 text-[10px] text-white font-mono"
-                style={{
-                  left: (hoverPoint.xPx ?? 0) + 10,
-                  top: (hoverPoint.yPx ?? 0) + 10,
-                }}
-              >
-                1 USDL = ${display.value.toFixed(3)} USDC
-              </div>
-            )}
-          </>
-        )}
-      </div>
-      <div className="flex items-center justify-between text-[11px] text-gray-500 font-mono uppercase">
-        <span>{'>'} GROWTH_SINCE_INCEPTION</span>
-        <span className="text-white">
-          +{(((display.value - 1) / 1) * 100).toFixed(1)}%
-        </span>
+      <div className="h-80">
+        <Line options={options} data={data} />
       </div>
     </div>
   );
-}
-
-function buildPoints(data: number[], width: number, height: number) {
-  if (!data.length) return [];
-  const max = Math.max(...data);
-  const min = Math.min(...data);
-  const range = max - min || 1;
-  return data.map((v, i) => {
-    const x = (i / Math.max(1, data.length - 1)) * width;
-    const y = height - ((v - min) / range) * height;
-    return { x, y };
-  });
-}
-
-function buildLinePath(points: { x: number; y: number }[]) {
-  if (!points.length) return "";
-  return points.map((p, i) => `${i === 0 ? "M" : "L"}${p.x},${p.y}`).join(" ");
-}
-
-function buildAreaPath(
-  points: { x: number; y: number }[],
-  width: number,
-  height: number
-) {
-  if (!points.length) return "";
-  const line = buildLinePath(points);
-  return `${line} L ${width} ${height} L 0 ${height} Z`;
-}
-
-function APRHistoryCard({
-  data,
-  range,
-  onRangeChange,
-}: {
-  data: number[];
-  range: "1W" | "1M" | "3M" | "1Y" | "ALL";
-  onRangeChange: (value: "1W" | "1M" | "3M" | "1Y" | "ALL") => void;
-}) {
-  const rangedData = useMemo(() => {
-    const counts: Record<typeof range, number> = {
-      "1W": 7,
-      "1M": 20,
-      "3M": 40,
-      "1Y": data.length,
-      ALL: data.length,
-    };
-    const take = counts[range] ?? data.length;
-    return data.slice(-take);
-  }, [data, range]);
-
-  const svgWidth = 100;
-  const svgHeight = 80;
-  const points = useMemo(
-    () => buildPoints(rangedData, svgWidth, svgHeight),
-    [rangedData, svgWidth, svgHeight]
-  );
-  const linePath = useMemo(() => buildLinePath(points), [points]);
-  const areaPath = useMemo(
-    () => buildAreaPath(points, svgWidth, svgHeight),
-    [points, svgWidth, svgHeight]
-  );
-  const [hoverPoint, setHoverPoint] = useState<{
-    x: number;
-    y: number;
-    value: number;
-    idx: number;
-    xPx?: number;
-    yPx?: number;
-  } | null>(null);
-  const display =
-    hoverPoint ??
-    (points.length
-      ? {
-          x: points[points.length - 1].x,
-          y: points[points.length - 1].y,
-          value: rangedData[rangedData.length - 1],
-          idx: points.length - 1,
-        }
-      : { x: 0, y: 0, value: 0, idx: 0 });
-  const svgRef = useRef<SVGSVGElement | null>(null);
-
-  const handleHover = (event: React.MouseEvent<SVGSVGElement, MouseEvent>) => {
-    if (!svgRef.current || !points.length) return;
-    const rect = svgRef.current.getBoundingClientRect();
-    const relX = ((event.clientX - rect.left) / rect.width) * svgWidth;
-    const clampedX = Math.max(0, Math.min(svgWidth, relX));
-
-    let idx = points.findIndex((p) => p.x >= clampedX);
-    if (idx === -1) idx = points.length - 1;
-    const prevIdx = Math.max(0, idx - 1);
-    const p0 = points[prevIdx];
-    const p1 = points[idx];
-    const v0 = rangedData[prevIdx] ?? rangedData[rangedData.length - 1] ?? 0;
-    const v1 = rangedData[idx] ?? v0;
-    const span = p1.x - p0.x || 1;
-    const t = Math.max(0, Math.min(1, (clampedX - p0.x) / span));
-    const interpY = p0.y + (p1.y - p0.y) * t;
-    const interpV = v0 + (v1 - v0) * t;
-
-    const parentRect = svgRef.current.parentElement?.getBoundingClientRect();
-    const xPx =
-      parentRect && rect
-        ? rect.left - parentRect.left + (clampedX / svgWidth) * rect.width
-        : undefined;
-    const yPx =
-      parentRect && rect
-        ? rect.top - parentRect.top + (interpY / svgHeight) * rect.height
-        : undefined;
-
-    setHoverPoint({
-      x: clampedX,
-      y: interpY,
-      value: interpV,
-      idx,
-      xPx,
-      yPx,
-    });
-  };
-
-  const handleLeave = () => {
-    setHoverPoint(null);
-  };
-
-  const minValue = Math.min(...rangedData);
-  const maxValue = Math.max(...rangedData);
-  const yTicks = [
-    maxValue,
-    maxValue - (maxValue - minValue) * 0.25,
-    maxValue - (maxValue - minValue) * 0.5,
-    maxValue - (maxValue - minValue) * 0.75,
-    minValue
-  ];
-
-  const [showDropdown, setShowDropdown] = useState(false);
-
-  const rangeLabels: Record<string, string> = {
-    "1W": "1W",
-    "1M": "1M",
-    "3M": "3M",
-    "1Y": "1Y",
-    "ALL": "All-time"
-  };
-
-  return (
-    <div className="space-y-4 border border-white/10 bg-black p-5">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <span className="text-sm font-medium text-white">
-            LLP Historic Performance (Net Asset Value)
-          </span>
-        </div>
-        <div className="relative flex items-center gap-2 text-xs">
-          <button
-            onClick={() => setShowDropdown(!showDropdown)}
-            className="px-3 py-1 text-gray-400 hover:text-white flex items-center gap-1"
-          >
-            {rangeLabels[range]} ▾
-          </button>
-          {showDropdown && (
-            <div className="absolute top-full right-0 mt-1 bg-[#1a1a1a] border border-white/10 rounded shadow-lg z-10 min-w-[100px]">
-              {["1W", "1M", "ALL"].map((r) => (
-                <button
-                  key={r}
-                  onClick={() => {
-                    onRangeChange(r as typeof range);
-                    setShowDropdown(false);
-                  }}
-                  className={`block w-full text-left px-4 py-2 text-sm hover:bg-white/5 ${
-                    range === r ? "text-green-400 bg-white/5" : "text-gray-400"
-                  }`}
-                >
-                  {rangeLabels[r]}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-      <div className="relative bg-black pl-12 pr-4 pt-2 pb-8" style={{ height: '320px' }}>
-        {/* Y-axis labels */}
-        <div className="absolute left-0 top-2 bottom-8 flex flex-col justify-between text-xs text-gray-500">
-          {yTicks.map((tick, i) => (
-            <div key={i} className="text-right pr-2" style={{ transform: 'translateY(-50%)' }}>
-              {tick.toFixed(3)}
-            </div>
-          ))}
-        </div>
-
-        {/* Chart area */}
-        <div className="relative h-full">
-          <svg
-            ref={svgRef}
-            viewBox={`0 0 ${svgWidth} ${svgHeight}`}
-            preserveAspectRatio="none"
-            className="block h-full w-full"
-            onMouseMove={handleHover}
-            onMouseLeave={handleLeave}
-          >
-            <defs>
-              <linearGradient id="navArea" x1="0" x2="0" y1="0" y2="1">
-                <stop offset="0%" stopColor="#10b981" stopOpacity="0.3" />
-                <stop offset="100%" stopColor="#10b981" stopOpacity="0" />
-              </linearGradient>
-            </defs>
-
-            {/* Grid lines */}
-            {[0, 20, 40, 60, 80].map((y) => (
-              <line
-                key={y}
-                x1={0}
-                x2={svgWidth}
-                y1={y}
-                y2={y}
-                stroke="#1f2937"
-                strokeWidth="0.2"
-              />
-            ))}
-
-            <path d={areaPath} fill="url(#navArea)" />
-            <path
-              d={linePath}
-              fill="none"
-              stroke="#10b981"
-              strokeWidth="0.6"
-              strokeLinecap="round"
-            />
-          </svg>
-
-          {/* X-axis labels */}
-          <div className="absolute bottom-0 left-0 right-0 flex justify-between text-xs text-gray-500 pt-2">
-            {['2/1', '3/1', '4/1', '5/1', '6/1', '7/1', '8/1', '9/1', '10/1', '11/1', '12/1'].map((label, i) => (
-              <span key={i}>{label}</span>
-            ))}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function formatDuration(ms: number) {
-  const totalSec = Math.floor(ms / 1000);
-  const h = Math.floor(totalSec / 3600)
-    .toString()
-    .padStart(2, "0");
-  const m = Math.floor((totalSec % 3600) / 60)
-    .toString()
-    .padStart(2, "0");
-  const s = Math.floor(totalSec % 60)
-    .toString()
-    .padStart(2, "0");
-  return `${h}:${m}:${s}`;
 }
 
 function TypewriterText() {
   const messages = [
-    {
-      line2: "100%",
-      line3: "LLP_ALLOCATION"
-    },
-    {
-      line2: "35% APR and Lighter Pts",
-      line3: ""
-    }
+    { line2: "100%", line3: "LLP_ALLOCATION" },
+    { line2: "35% APR and Lighter Pts", line3: "" }
   ];
 
   const [messageIndex, setMessageIndex] = useState(0);
@@ -2069,94 +2224,97 @@ function TypewriterText() {
 
   useEffect(() => {
     const currentMessage = messages[messageIndex];
-    const targetText = currentMessage[currentLine];
+    const typingSpeed = isDeleting ? 50 : 100;
+    const pauseBeforeDelete = 2000;
+    const pauseBeforeNext = 500;
 
-    if (!isDeleting) {
-      // Typing
-      if (charIndex < targetText.length) {
+    if (!isDeleting && currentLine === 'line2' && charIndex < currentMessage.line2.length) {
+      const timer = setTimeout(() => {
+        setDisplayText(prev => ({
+          ...prev,
+          line2: currentMessage.line2.substring(0, charIndex + 1)
+        }));
+        setCharIndex(charIndex + 1);
+      }, typingSpeed);
+      return () => clearTimeout(timer);
+    } else if (!isDeleting && currentLine === 'line2' && charIndex === currentMessage.line2.length) {
+      if (currentMessage.line3) {
         const timer = setTimeout(() => {
-          setDisplayText(prev => ({
-            ...prev,
-            [currentLine]: targetText.substring(0, charIndex + 1)
-          }));
-          setCharIndex(charIndex + 1);
-        }, 50);
-        return () => clearTimeout(timer);
-      } else {
-        // Move to next line
-        if (currentLine === 'line2') {
           setCurrentLine('line3');
           setCharIndex(0);
-        } else {
-          // All lines typed, wait before deleting
-          const timer = setTimeout(() => {
-            setIsDeleting(true);
-            setCurrentLine('line3');
-          }, 3000);
-          return () => clearTimeout(timer);
-        }
-        return undefined;
-      }
-    } else {
-      // Deleting
-      if (currentLine === 'line3' && displayText.line3.length > 0) {
-        const timer = setTimeout(() => {
-          setDisplayText(prev => ({
-            ...prev,
-            line3: prev.line3.substring(0, prev.line3.length - 1)
-          }));
-        }, 30);
-        return () => clearTimeout(timer);
-      } else if (currentLine === 'line3' && displayText.line3.length === 0) {
-        setCurrentLine('line2');
-      } else if (currentLine === 'line2' && displayText.line2.length > 0) {
-        const timer = setTimeout(() => {
-          setDisplayText(prev => ({
-            ...prev,
-            line2: prev.line2.substring(0, prev.line2.length - 1)
-          }));
-        }, 30);
+        }, 300);
         return () => clearTimeout(timer);
       } else {
-        // All deleted, switch message
-        setMessageIndex((messageIndex + 1) % messages.length);
-        setIsDeleting(false);
-        setCurrentLine('line2');
-        setCharIndex(0);
+        const timer = setTimeout(() => {
+          setIsDeleting(true);
+          setCharIndex(currentMessage.line2.length);
+        }, pauseBeforeDelete);
+        return () => clearTimeout(timer);
       }
+    } else if (!isDeleting && currentLine === 'line3' && charIndex < currentMessage.line3.length) {
+      const timer = setTimeout(() => {
+        setDisplayText(prev => ({
+          ...prev,
+          line3: currentMessage.line3.substring(0, charIndex + 1)
+        }));
+        setCharIndex(charIndex + 1);
+      }, typingSpeed);
+      return () => clearTimeout(timer);
+    } else if (!isDeleting && currentLine === 'line3' && charIndex === currentMessage.line3.length) {
+      const timer = setTimeout(() => {
+        setIsDeleting(true);
+        setCurrentLine('line3');
+        setCharIndex(currentMessage.line3.length);
+      }, pauseBeforeDelete);
+      return () => clearTimeout(timer);
+    } else if (isDeleting && currentLine === 'line3' && charIndex > 0) {
+      const timer = setTimeout(() => {
+        setDisplayText(prev => ({
+          ...prev,
+          line3: currentMessage.line3.substring(0, charIndex - 1)
+        }));
+        setCharIndex(charIndex - 1);
+      }, typingSpeed);
+      return () => clearTimeout(timer);
+    } else if (isDeleting && currentLine === 'line3' && charIndex === 0) {
+      setCurrentLine('line2');
+      setCharIndex(displayText.line2.length);
+      return undefined;
+    } else if (isDeleting && currentLine === 'line2' && charIndex > 0) {
+      const timer = setTimeout(() => {
+        setDisplayText(prev => ({
+          ...prev,
+          line2: currentMessage.line2.substring(0, charIndex - 1)
+        }));
+        setCharIndex(charIndex - 1);
+      }, typingSpeed);
+      return () => clearTimeout(timer);
+    } else if (isDeleting && currentLine === 'line2' && charIndex === 0) {
+      const timer = setTimeout(() => {
+        setIsDeleting(false);
+        setMessageIndex((messageIndex + 1) % messages.length);
+        setCharIndex(0);
+        setCurrentLine('line2');
+        setDisplayText({ line2: "", line3: "" });
+      }, pauseBeforeNext);
+      return () => clearTimeout(timer);
+    } else {
       return undefined;
     }
   }, [charIndex, isDeleting, messageIndex, currentLine, displayText]);
 
   return (
     <h2 className="text-xl font-bold text-white uppercase tracking-wider md:text-3xl font-mono h-24 md:h-28">
-      DEPOSIT_USDC & GET
+      STAKE_USDC & GET
       <br/>
       {displayText.line2 && (
         <span className="inline-flex items-baseline gap-2">
-          {displayText.line2.includes('%') && !displayText.line2.includes('APR') ? (
-            <>
-              <span className="text-4xl font-bold text-green-400 md:text-6xl">
-                {displayText.line2}
-              </span>
-              {displayText.line3 && (
-                <span className="text-xl text-green-400 md:text-3xl">
-                  {displayText.line3}
-                </span>
-              )}
-            </>
-          ) : displayText.line2.match(/^\d+%/) ? (
-            <>
-              <span className="text-4xl font-bold text-green-400 md:text-6xl">
-                {displayText.line2.match(/^\d+%/)?.[0]}
-              </span>
-              <span className="text-xl text-green-400 md:text-2xl">
-                {displayText.line2.replace(/^\d+%\s*/, '')}
-              </span>
-            </>
-          ) : (
-            <span className="text-xl text-green-400 md:text-2xl">
-              {displayText.line2}
+          <span className="text-xl text-green-400 md:text-3xl">
+            {displayText.line2}
+          </span>
+          {displayText.line3 && (
+            <span className="text-xl text-green-400 md:text-3xl">
+              {displayText.line3}
             </span>
           )}
         </span>
@@ -2164,3 +2322,5 @@ function TypewriterText() {
     </h2>
   );
 }
+
+
